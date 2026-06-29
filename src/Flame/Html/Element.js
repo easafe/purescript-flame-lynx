@@ -78,13 +78,36 @@ export function createSingleElementNode(tag) {
 
 export function createSvgNode(nodeData) {
     return function (children) {
-        return {
-            node: undefined,
-            tag: 'svg',
-            nodeData: nodeData,
-            children: children
-        };
+        let props = "",
+            nd = [];
+
+        for (let [name, value, isEvent] of nodeData)
+            if (!isEvent && name !== "className" && name !== "style")
+                props += `${name}="${value}" `;
+            else
+                nd.push([name, value, isEvent]);
+
+        //thats how lynx parses svg, with a content prop for the markup
+        nd.push(["content", `<svg ${props}>${children}</svg>`]);
+
+        return ["svg", nd, undefined];
     };
+}
+
+export function createSvgChild(tag) {
+    return function (nodeData) {
+        return function (children) {
+            let props = '';
+
+            for (let [name, value, isEvent] of nodeData)
+                if (!isEvent)
+                    props += `${name}="${value} "`;
+
+            let end = children.length == 0 ? '/>' : `${children.join('')}</${tag}>`;
+
+            return `<${tag} ${props} ${end}`;
+        }
+    }
 }
 
 // export function createDatalessSvgNode(children) {
