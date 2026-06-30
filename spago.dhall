@@ -4,7 +4,7 @@ You can edit this file as you like.
 -}
 { name = "flame"
 , license = "MIT"
-, repository = "https://github.com/easafe/purescript-flame"
+, repository = "https://github.com/easafe/purescript-flame-lynx"
 , dependencies =
   [ "aff"
   , "argonaut-codecs"

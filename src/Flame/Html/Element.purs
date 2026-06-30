@@ -1,5 +1,120 @@
 -- | Definition of HTML elements
-module Flame.Html.Element where
+module Flame.Html.Element
+  ( NodeRenderer
+  , b
+  , b'
+  , b_
+  , blockquote
+  , blockquote'
+  , blockquote_
+  , body
+  , body'
+  , body_
+  , button
+  , button'
+  , button_
+  , circle
+  , circle'
+  , clipPath
+  , createDatalessElementNode
+  , createDatalessSvgChild
+  , createElement
+  , createElement'
+  , createElementNode
+  , createElement_
+  , createSingleElementNode
+  , createSvgChild
+  , createSvgNode
+  , defs
+  , div
+  , div'
+  , div_
+  , ellipse
+  , ellipse'
+  , fragment
+  , g
+  , g_
+  , h1
+  , h1'
+  , h1_
+  , h2
+  , h2'
+  , h2_
+  , h3
+  , h3'
+  , h3_
+  , head
+  , head'
+  , head_
+  , html
+  , html'
+  , html_
+  , i
+  , i'
+  , i_
+  , image
+  , img
+  , input
+  , input_
+  , label
+  , label'
+  , label_
+  , li
+  , li'
+  , li_
+  , line
+  , linearGradient
+  , main
+  , main'
+  , main_
+  , ol
+  , ol'
+  , ol_
+  , p
+  , p'
+  , p_
+  , path
+  , path'
+  , polygon
+  , polygon'
+  , polyline
+  , pre
+  , pre'
+  , pre_
+  , radialGradient
+  , rect
+  , rect'
+  , select
+  , select'
+  , select_
+  , span
+  , span'
+  , span_
+  , stop
+  , strong
+  , strong'
+  , strong_
+  , svg
+  , table
+  , table'
+  , table_
+  , td
+  , td'
+  , td_
+  , text
+  , textarea
+  , textarea'
+  , textarea_
+  , title
+  , tr
+  , tr'
+  , tr_
+  , ul
+  , ul'
+  , ul_
+  , use
+  )
+  where
 
 import Prelude hiding (map)
 
@@ -70,51 +185,73 @@ foreign import createSvgNode ∷ ∀ message. Array (NodeData message) → Array
 svg ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 svg nodeData children = createSvgNode nodeData children
 
-foreign import createSvgChild ∷ ∀ message. Tag -> Array (NodeData message) → Array (Html message) → Html message
+foreign import createSvgChild ∷ ∀ message. Tag → Array (NodeData message) → Array (Html message) → Html message
 
-circle  :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+foreign import createDatalessSvgChild ∷ ∀ message. Tag → Array (Html message) → Html message
+
+foreign import createSingleSvgChild ∷ ∀ message. Tag → Array (NodeData message) → Html message
+
+circle ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 circle nodeData children = createSvgChild "circle" nodeData children
 
-clipPath :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+circle' ∷ ∀ message. Array (NodeData message) → Html message
+circle' nodeData = createSingleSvgChild "circle" nodeData
+
+clipPath ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 clipPath nodeData children = createSvgChild "clipPath" nodeData children
 
-defs :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+defs ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 defs nodeData children = createSvgChild "defs" nodeData children
 
-ellipse :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
-ellipse nodeData children = createSvgChild "ellipse" nodeData children
+ellipse' ∷ ∀ message. Array (NodeData message) → Html message
+ellipse' nodeData = createSingleSvgChild "ellipse" nodeData
 
-g :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+ellipse ∷ ∀ message. Array (NodeData message) → Html message
+ellipse nodeData = createSingleSvgChild "ellipse" nodeData
+
+g ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 g nodeData children = createSvgChild "g" nodeData children
 
-image :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+g_ ∷ ∀ message.  Array (Html message) → Html message
+g_  children = createDatalessSvgChild "g" children
+
+image ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 image nodeData children = createSvgChild "image" nodeData children
 
-line :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+line ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 line nodeData children = createSvgChild "line" nodeData children
 
-linearGradient :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+linearGradient ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 linearGradient nodeData children = createSvgChild "linearGradient" nodeData children
 
-path :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+path ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 path nodeData children = createSvgChild "path" nodeData children
 
-polygon :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+path' ∷ ∀ message. Array (NodeData message) → Html message
+path' nodeData = createSingleSvgChild "path" nodeData
+
+polygon ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 polygon nodeData children = createSvgChild "polygon" nodeData children
 
-polyline :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+polygon' ∷ ∀ message. Array (NodeData message)  → Html message
+polygon' nodeData = createSingleSvgChild "polygon" nodeData
+
+polyline ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 polyline nodeData children = createSvgChild "polyline" nodeData children
 
-radialGradient :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+radialGradient ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 radialGradient nodeData children = createSvgChild "radialGradient" nodeData children
 
-rect :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+rect ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 rect nodeData children = createSvgChild "rect" nodeData children
 
-stop :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+rect' ∷ ∀ message. Array (NodeData message) → Html message
+rect' nodeData = createSingleSvgChild "rect" nodeData
+
+stop ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 stop nodeData children = createSvgChild "stop" nodeData children
 
-use :: forall message. Array (NodeData message) -> Array (Html message) -> Html message
+use ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 use nodeData children = createSvgChild "use" nodeData children
 
 input ∷ ∀ message. Array (NodeData message) → Html message
@@ -123,8 +260,14 @@ input = createElement' "input"
 input_ ∷ ∀ message. Array (Html message) → Html message
 input_ = createElement_ "input"
 
+fragment :: ∀ message. Array (Html message) → Html message
+fragment = createElement_ "fragment"
+
 b ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 b = createElement "text"
+
+title ∷ ∀ message. Array (Html message)  → Html message
+title = createElement_ "title"
 
 b_ ∷ ∀ message. Array (Html message) → Html message
 b_ = createElement_ "text"

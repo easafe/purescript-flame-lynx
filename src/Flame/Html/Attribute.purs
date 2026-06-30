@@ -204,6 +204,7 @@ import Flame.Html.Attribute.Internal
       , srcdoc
       , srclang
       , start
+      , createAttribute
       , stdDeviation
       , step
       , stitchTiles

@@ -110,6 +110,28 @@ export function createSvgChild(tag) {
     }
 }
 
+export function createSingleSvgChild(tag) {
+    return function (nodeData) {
+        let props = '';
+
+        for (let [name, value, isEvent] of nodeData)
+            if (!isEvent)
+                props += `${name}="${value} "`;
+
+        return `<${tag} ${props} />`;
+    }
+}
+
+
+export function createDatalessSvgChild(tag) {
+    return function (children) {
+        let end = children.length == 0 ? '/>' : `${children.join('')}</${tag}>`;
+
+        return `<${tag} ${end}`;
+    }
+}
+
+
 // export function createDatalessSvgNode(children) {
 //     return {
 //         nodeType: svgNode,
