@@ -19,6 +19,7 @@ import Flame.Html.Attribute.Internal
       , alignmentBaseline
       , alt
       , ascent
+      , autoSize
       , autocomplete
       , autofocus
       , autoplay

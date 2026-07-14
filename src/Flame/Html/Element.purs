@@ -261,10 +261,10 @@ input_ ∷ ∀ message. Array (Html message) → Html message
 input_ = createElement_ "input"
 
 fragment :: ∀ message. Array (Html message) → Html message
-fragment = createElement_ "fragment"
+fragment = createElement_ "Fragment"
 
 b ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
-b = createElement "text"
+b = createElement "view"
 
 title ∷ ∀ message. Array (Html message)  → Html message
 title = createElement_ "title"
@@ -276,7 +276,7 @@ b' ∷ ∀ message. Array (NodeData message) → Html message
 b' = createElement' "text"
 
 blockquote ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
-blockquote = createElement "text"
+blockquote = createElement "view"
 
 blockquote_ ∷ ∀ message. Array (Html message) → Html message
 blockquote_ = createElement_ "text"
@@ -312,7 +312,7 @@ div' ∷ ∀ message. Array (NodeData message) → Html message
 div' = createElement' "view"
 
 h1 ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
-h1 = createElement "text"
+h1 = createElement "view"
 
 h1_ ∷ ∀ message. Array (Html message) → Html message
 h1_ = createElement_ "text"
@@ -321,7 +321,7 @@ h1' ∷ ∀ message. Array (NodeData message) → Html message
 h1' = createElement' "text"
 
 h2 ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
-h2 = createElement "text"
+h2 = createElement "view"
 
 h2_ ∷ ∀ message. Array (Html message) → Html message
 h2_ = createElement_ "text"
@@ -330,7 +330,7 @@ h2' ∷ ∀ message. Array (NodeData message) → Html message
 h2' = createElement' "text"
 
 h3 ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
-h3 = createElement "text"
+h3 = createElement "view"
 
 h3_ ∷ ∀ message. Array (Html message) → Html message
 h3_ = createElement_ "text"
@@ -357,7 +357,7 @@ html' ∷ ∀ message. Array (NodeData message) → Html message
 html' = createElement' "view"
 
 i ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
-i = createElement "text"
+i = createElement "view"
 
 i_ ∷ ∀ message. Array (Html message) → Html message
 i_ = createElement_ "text"
@@ -405,7 +405,7 @@ img ∷ ∀ message. Array (NodeData message) → Html message
 img = createElement' "image"
 
 p ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
-p = createElement "text"
+p = createElement "view"
 
 p_ ∷ ∀ message. Array (Html message) → Html message
 p_ = createElement_ "text"
@@ -414,7 +414,7 @@ p' ∷ ∀ message. Array (NodeData message) → Html message
 p' = createElement' "text"
 
 pre ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
-pre = createElement "text"
+pre = createElement "view"
 
 pre_ ∷ ∀ message. Array (Html message) → Html message
 pre_ = createElement_ "text"
@@ -441,7 +441,7 @@ span' ∷ ∀ message. Array (NodeData message) → Html message
 span' = createElement' "view"
 
 strong ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
-strong = createElement "text"
+strong = createElement "view"
 
 strong_ ∷ ∀ message. Array (Html message) → Html message
 strong_ = createElement_ "text"
