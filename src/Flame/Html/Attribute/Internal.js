@@ -5,7 +5,7 @@ export function createProp(name) {
 }
 
 export function createClass(array) {
-    return ['className', array.join('')];
+    return ['className', array.join(' ')];
 }
 
 export function createStyle(object) {
