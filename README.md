@@ -11,7 +11,7 @@ See the [project page](https://flame.asafe.dev/) or [pursuit](https://pursuit.pu
 Install:
 
 ```bash
-spago install flame
+spago install flame-lynx
 ```
 
 Example counter app:
