@@ -6,70 +6,70 @@
         "core": {
           "dependencies": [
             {
-              "aff": "*"
+              "aff": ">=8.0.1 <9.0.0"
             },
             {
-              "argonaut-codecs": "*"
+              "argonaut-codecs": ">=9.2.0 <10.0.0"
             },
             {
-              "argonaut-core": "*"
+              "argonaut-core": ">=7.0.1 <8.0.0"
             },
             {
-              "argonaut-generic": "*"
+              "argonaut-generic": ">=8.0.1 <9.0.0"
             },
             {
-              "arrays": "*"
+              "arrays": ">=7.3.1 <8.0.0"
             },
             {
-              "bifunctors": "*"
+              "bifunctors": ">=6.1.1 <7.0.0"
             },
             {
-              "console": "*"
+              "console": ">=6.1.1 <7.0.0"
             },
             {
-              "effect": "*"
+              "effect": ">=4.0.1 <5.0.0"
             },
             {
-              "either": "*"
+              "either": ">=6.1.1 <7.0.0"
             },
             {
-              "exceptions": "*"
+              "exceptions": ">=6.1.1 <7.0.0"
             },
             {
-              "foldable-traversable": "*"
+              "foldable-traversable": ">=6.0.1 <7.0.0"
             },
             {
-              "foreign": "*"
+              "foreign": ">=7.0.1 <8.0.0"
             },
             {
-              "foreign-object": "*"
+              "foreign-object": ">=4.1.1 <5.0.0"
             },
             {
-              "maybe": "*"
+              "maybe": ">=6.0.1 <7.0.0"
             },
             {
-              "nullable": "*"
+              "nullable": ">=6.0.1 <7.0.0"
             },
             {
-              "partial": "*"
+              "partial": ">=4.0.1 <5.0.0"
             },
             {
-              "prelude": "*"
+              "prelude": ">=6.0.3 <7.0.0"
             },
             {
-              "strings": "*"
+              "strings": ">=6.1.0 <7.0.0"
             },
             {
-              "tuples": "*"
+              "tuples": ">=7.0.1 <8.0.0"
             },
             {
-              "typelevel-prelude": "*"
+              "typelevel-prelude": ">=7.0.1 <8.0.0"
             },
             {
-              "web-dom": "*"
+              "web-dom": ">=7.0.0 <8.0.0"
             },
             {
-              "web-events": "*"
+              "web-events": ">=4.0.1 <5.0.0"
             }
           ]
         },
