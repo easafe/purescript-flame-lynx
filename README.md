@@ -71,7 +71,7 @@ main = F.mount (AppId "counter")
 
 ### Licensing
 
-Licenses for loadash, stage0 and snabbdom-to-html added under [licenses](licenses/) since parts of the rendering code was adapted from these projects
+Third-party license notices are available under [licenses](licenses/).
 
 ### Funding
 

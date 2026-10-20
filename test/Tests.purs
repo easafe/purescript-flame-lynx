@@ -35,8 +35,10 @@ import Test.Spec (Spec)
 import Test.Spec as TS
 import Test.Spec.Assertions as TSA
 import Web.Event.Event (EventType(..))
+import Web.DOM.AttrName (AttrName(..))
 import Web.DOM.Element (Element)
 import Web.DOM.Element as WDE
+import Web.DOM.ElementId (ElementId(..))
 import Web.DOM.HTMLCollection as WDH
 import Web.DOM.Node as WDN
 import Web.DOM.ParentNode (QuerySelector(..))
@@ -46,20 +48,6 @@ import Web.HTML.HTMLDocument as WHH
 import Web.HTML.Window as WHW
 
 type AsyncTest = Effect Unit → (Error → Effect Unit) → Effect Unit
-
-foreign import registerTest_ ∷ String → AsyncTest → Effect Unit
-foreign import describe_ ∷ String → Effect Unit → Effect Unit
-foreign import pending_ ∷ String → Effect Unit
-foreign import afterAll_ ∷ AsyncTest → Effect Unit
-
-foreign import settle_ ∷ EffectFnAff Unit
-
-foreign import unsafeCreateEnviroment ∷ Effect Unit
-foreign import perform_ ∷ ∀ a. Effect a → EffectFnAff a
-foreign import getStyle_ ∷ Element → String → Effect String
-foreign import dispatch_ ∷ String → String → String → Effect Unit
-foreign import attributeValue_ ∷ ∀ message. NodeData message → String
-foreign import attributeName_ ∷ ∀ message. NodeData message → String
 
 tests ∷ Effect Unit
 tests = case TS.collect spec of
@@ -319,10 +307,10 @@ exists ∷ String → Effect Boolean
 exists selector = DM.isJust <$> querySelector selector
 
 childIds ∷ String → Effect (Array String)
-childIds selector = queryElement selector >>= WDP.children <<< WDE.toParentNode >>= WDH.toArray >>= DT.traverse WDE.id
+childIds selector = queryElement selector >>= WDP.children <<< WDE.toParentNode >>= WDH.toArray >>= DT.traverse (map (\(ElementId value) → value) <<< WDE.id)
 
 getAttribute ∷ String → String → Effect String
-getAttribute selector name = map (DM.fromMaybe "") $ queryElement selector >>= WDE.getAttribute name
+getAttribute selector name = map (DM.fromMaybe "") $ queryElement selector >>= WDE.getAttribute (AttrName name)
 
 getStyle ∷ String → String → Effect String
 getStyle selector name = queryElement selector >>= flip getStyle_ name
@@ -342,3 +330,18 @@ mountHtml html = do
 
 resumeHtml ∷ RenderingState → Html Unit → Aff Unit
 resumeHtml state html = perform $ FRIM.resume state html
+
+
+foreign import registerTest_ ∷ String → AsyncTest → Effect Unit
+foreign import describe_ ∷ String → Effect Unit → Effect Unit
+foreign import pending_ ∷ String → Effect Unit
+foreign import afterAll_ ∷ AsyncTest → Effect Unit
+
+foreign import settle_ ∷ EffectFnAff Unit
+
+foreign import unsafeCreateEnviroment ∷ Effect Unit
+foreign import perform_ ∷ ∀ a. Effect a → EffectFnAff a
+foreign import getStyle_ ∷ Element → String → Effect String
+foreign import dispatch_ ∷ String → String → String → Effect Unit
+foreign import attributeValue_ ∷ ∀ message. NodeData message → String
+foreign import attributeName_ ∷ ∀ message. NodeData message → String

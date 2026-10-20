@@ -1,5 +1,5 @@
 -- | Attributes for Lynx elements and the supported SVG markup subset
-module Flame.Html.Attribute.Internal (class ToClassList, class ToStyleList, ToBooleanAttribute, ToIntAttribute, ToNumberAttribute, ToStringAttribute, class', createAttribute, createProp, style, style1, to, toStyleList, key, autoSize, autoplay, id, content, placeholder, src, type', value, height, maxlength, width, clipPathAttr, clipPathUnits, clipRule, color, cx, cy, d, fill, fillOpacity, fillRule, fontSize, fx, fy, gradientTransform, gradientUnits, href, opacity, preserveAspectRatio, r, rx, ry, stopColor, stopOpacity, stroke, strokeDasharray, strokeDashoffset, strokeLinecap, strokeLinejoin, strokeMiterlimit, strokeOpacity, strokeWidth, transform, viewBox, x, y, x1, y1, x2, y2, points, mode, styleAttr, disabled, readOnly) where
+module Flame.Html.Attribute.Internal (class ToClassList, class ToStyleList, ToBooleanAttribute, ToIntAttribute, ToNumberAttribute, ToStringAttribute, class', createAttribute, createProp, style, style1, to, toStyleList, key, autoSize, autoplay, id, content, placeholder, src, type', value, height, maxlength, width, clipPathAttr, clipPathUnits, clipRule, color, cx, cy, d, fill, fillOpacity, fillRule, fontSize, fx, fy, gradientTransform, gradientUnits, href, opacity, preserveAspectRatio, r, rx, ry, stopColor, stopOpacity, stroke, strokeDasharray, strokeDashoffset, strokeLinecap, strokeLinejoin, strokeMiterlimit, strokeOpacity, strokeWidth, transform, viewBox, x, y, x1, y1, x2, y2, points, mode, styleAttr, disabled, readOnly, title, target, rel, action, method, accept, autocomplete, alt, charset, for, lang, name, checked, selected, rows) where
 
 import Data.Array as DA
 import Data.Either as DE
@@ -263,3 +263,48 @@ readOnly = createBooleanProp "readonly"
 
 autoplay ∷ ToBooleanAttribute
 autoplay = createBooleanProp "autoplay"
+
+title ∷ ToStringAttribute
+title = createProp "title"
+
+target ∷ ToStringAttribute
+target = createProp "target"
+
+rel ∷ ToStringAttribute
+rel = createProp "rel"
+
+action ∷ ToStringAttribute
+action = createProp "action"
+
+method ∷ ToStringAttribute
+method = createProp "method"
+
+accept ∷ ToStringAttribute
+accept = createProp "accept"
+
+autocomplete ∷ ToStringAttribute
+autocomplete = createProp "autocomplete"
+
+alt ∷ ToStringAttribute
+alt = createProp "alt"
+
+charset ∷ ToStringAttribute
+charset = createProp "charset"
+
+for ∷ ToStringAttribute
+for = createProp "for"
+
+lang ∷ ToStringAttribute
+lang = createProp "lang"
+
+name ∷ ToStringAttribute
+name = createProp "name"
+
+checked ∷ ToBooleanAttribute
+checked = createBooleanProp "checked"
+
+selected ∷ ToBooleanAttribute
+selected = createBooleanProp "selected"
+
+rows ∷ ToIntAttribute
+rows = createIntProp "rows"

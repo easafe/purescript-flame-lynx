@@ -25,7 +25,10 @@ package:
   name: flame-lynx
   test:
     main: Test.Main
-    dependencies: []
+    dependencies:
+      - random
+      - spec
+      - web-html
   publish:
     version: 0.0.1
     license: MIT
