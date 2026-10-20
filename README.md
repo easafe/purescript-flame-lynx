@@ -1,14 +1,10 @@
 ## Flame ![build status](https://github.com/easafe/purescript-flame/actions/workflows/CI.yml/badge.svg)
 
-Flame is a fast & simple framework inspired by the Elm architecture for building web applications in PureScript
+Flame is a fast & simple framework inspired by the Elm architecture for building Lynx applications in PureScript
 
 ### Documentation
 
 See the [project page](https://flame.asafe.dev/) or [pursuit](https://pursuit.purescript.org/packages/purescript-flame)
-
-### Examples
-
-See the [examples folder](/examples)
 
 ### Quick start
 
@@ -26,11 +22,10 @@ module Counter.Main where
 import Prelude
 
 import Effect (Effect)
-import Flame (Html, QuerySelector(..), Subscription)
--- Side effects free updating; see docs for other examples
-import Flame.Application.NoEffects as FAN
-import Flame.Html.Element as HE
-import Flame.Html.Attribute as HA
+import Flame (AppId(..), Html, Subscription, Update)
+import Flame as F
+import Flame.Html.Attribute as FHA
+import Flame.Html.Element as FHE
 
 -- | The model represents the state of the app
 type Model = Int
@@ -39,35 +34,35 @@ type Model = Int
 data Message = Increment | Decrement
 
 -- | Initial state of the app
-init :: Model
+init ∷ Model
 init = 0
 
--- | `update` is called to handle events
-update :: Model -> Message -> Model
+-- | Update the model without scheduling any effects
+update ∷ Update Model Message
 update model = case _ of
-      Increment -> model + 1
-      Decrement -> model - 1
+      Increment → F.noMessages $ model + 1
+      Decrement → F.noMessages $ model - 1
 
--- | `view` is called whenever the model is updated
-view :: Model -> Html Message
-view model = HE.main [HA.id "main"] [
-      HE.button [HA.onClick Decrement] [HE.text "-"],
-      HE.text $ show model,
-      HE.button [HA.onClick Increment] [HE.text "+"]
-]
+-- | Render Lynx views and text, with onClick handling tap events
+view ∷ Model → Html Message
+view model = FHE.createElement "view" [ FHA.id "main" ]
+      [ FHE.createElement "view" [ FHA.onClick Decrement ] [ FHE.text "-" ]
+      , FHE.text $ show model
+      , FHE.createElement "view" [ FHA.onClick Increment ] [ FHE.text "+" ]
+      ]
 
--- | Events that come from outside the `view`
-subscribe :: Array (Subscription Message)
+-- | Events that come from outside the view
+subscribe ∷ Array (Subscription Message)
 subscribe = []
 
--- | Mount the application on the given selector
-main :: Effect Unit
-main = FAN.mount_ (QuerySelector "body") {
-      init,
-      view,
-      update,
-      subscribe
-}
+-- | Mount the application in the Lynx root with a unique application ID
+main ∷ Effect Unit
+main = F.mount (AppId "counter")
+      { model: init
+      , view
+      , update
+      , subscribe
+      }
 ```
 
 ### Tools

@@ -11,3 +11,5 @@ export function createClass(array) {
 export function createStyle(object) {
     return ['style', object];
 }
+
+export { createProp as createBooleanProp, createProp as createIntProp };

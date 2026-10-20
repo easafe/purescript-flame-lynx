@@ -1,11 +1,68 @@
-import { root, createElement, useState } from '@lynx-js/react'
+import { root, createElement, useEffect, useState } from '@lynx-js/react';
+import { MemoryRouter, Routes, Route, useNavigate, useLocation } from 'react-router';
 
-export function start_(updater, view, initialState) {
-    return new M(updater, view, initialState);
+let navigate;
+
+function RouterContent({ applications }) {
+    let routerNavigate = useNavigate();
+
+    useEffect(() => {
+        navigate = routerNavigate;
+
+        return () => { navigate = undefined; };
+    }, [routerNavigate]);
+
+    return createElement(Routes, null,
+        applications.map(application => createElement(Route, {
+            key: application.path,
+            path: application.path,
+            element: createElement(GuardedApplication, { application }),
+        })));
+}
+
+function GuardedApplication({ application }) {
+    let location = useLocation(),
+        routerNavigate = useNavigate(),
+        [allowedKey, setAllowedKey] = useState(null);
+
+    useEffect(() => {
+        let destination = application.guard();
+
+        if (destination !== null && routePath(destination) !== location.pathname) {
+            setAllowedKey(null);
+            // wait for subscription before setting navigation
+            let redirect = setTimeout(() => routerNavigate(routePath(destination), { replace: true }), 0);
+
+            return () => clearTimeout(redirect);
+        } else
+            setAllowedKey(location.key);
+
+    }, [application, location.key, location.pathname, routerNavigate]);
+
+    return allowedKey === location.key ? createElement(application.App) : null;
+}
+
+function routePath(path) {
+    return path.startsWith('/') ? path : '/' + path;
+}
+
+export function start_(applications) {
+    root.render(createElement(MemoryRouter, { initialEntries: [applications[0].path] }, createElement(RouterContent, { applications })));
+}
+
+export function create_(appId, updater, view, initialState, guard) {
+    return new M(appId, updater, view, initialState, guard);
 }
 
 export function resume_(m, state) {
     m.resume(state);
+}
+
+export function navigate_(path) {
+    if (!navigate)
+        throw new Error('Flame router is not mounted');
+
+    navigate(routePath(path));
 }
 
 export function getState_(m) {
@@ -13,12 +70,25 @@ export function getState_(m) {
 }
 
 class M {
-    constructor(updater, view, initialState) {
-        this.App = () => {
-            let [state, setState] = useState(initialState);
+    constructor(appId, updater, view, initialState, guard) {
+        this.path = routePath(appId);
+        this.state = initialState;
+        this.guard = guard;
 
-            this.getState = () => state;
-            this.resume = (s) => setState(s);
+        this.getState = () => this.state;
+        this.resume = (state) => {
+            this.state = state;
+            if (this.setState !== undefined)
+                this.setState(() => state);
+        };
+        this.App = () => {
+            let [state, setState] = useState(() => this.state);
+
+            this.setState = setState;
+
+            useEffect(() => () => {
+                this.setState = undefined;
+            }, []);
 
             function toReact(html) {
                 let props = html[1] === undefined ? undefined : toProps(html[1]),
@@ -39,12 +109,14 @@ class M {
             return toReact(view(state));
         };
 
+        let update = updater(this);
+
         function toProps(nodeData) {
             let props = {};
 
             for (let [name, value, isEvent] of nodeData) {
                 if (isEvent) {
-                    props[name] = typeof value === "function" ? (e) => updater(value(e))() : () => updater(value)();
+                    props[name] = typeof value === "function" ? (e) => update(value(e)())() : () => update(value)();
                 }
                 else
                     props[name] = value;
@@ -52,7 +124,5 @@ class M {
 
             return props;
         }
-
-        root.render(createElement(this.App));
     }
 }

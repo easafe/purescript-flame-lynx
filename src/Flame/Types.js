@@ -1,28 +1,22 @@
 export function messageMapper(mapper) {
-    return function (html) {
-        return addMessageMapper(html, mapper);
+    return function mapHtml(html) {
+        // SVG children are serialized markup rather than event-bearing nodes
+        if (typeof html === 'string')
+            return html;
+
+        let [tag, nodeData, children] = html;
+
+        let mappedData = nodeData?.map(([name, value, isEvent]) => {
+            if (!isEvent)
+                return [name, value];
+
+            let mapped = typeof value === 'function'
+                ? event => () => mapper(value(event)())
+                : mapper(value);
+
+            return [name, mapped, true];
+        });
+
+        return [tag, mappedData, Array.isArray(children) ? children.map(mapHtml) : children];
     };
-}
-
-function addMessageMapper(html, mapper) {
-    if (html.nodeType !== 1 && html.nodeType !== 4)
-        mapHtml(html, mapper);
-
-    if (html.children !== undefined && html.children.length > 0)
-        for (let i = 0; i < html.children.length; ++i)
-            addMessageMapper(html.children[i], mapper);
-
-    return html;
-}
-
-function mapHtml(html, mapper) {
-    if (html.messageMapper) {
-        let previousMessageMapper = html.messageMapper;
-
-        html.messageMapper = function (message) {
-            return mapper(previousMessageMapper(message));
-        };
-    }
-    else
-        html.messageMapper = mapper;
 }

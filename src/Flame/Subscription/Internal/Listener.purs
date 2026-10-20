@@ -3,14 +3,16 @@ module Flame.Subscription.Internal.Listener
       , createSubscription
       ) where
 
-import Data.Tuple (Tuple(..))
+import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Uncurried (EffectFn1)
 import Effect.Uncurried as EU
-import Flame.Application.Internal.Dom as FAID
-import Flame.Types (ApplicationId, Source(..), Subscription)
+import Flame.Subscription.Internal.GlobalEvent as FSIG
+import Flame.Types (ApplicationId, Subscription)
+import Foreign (Foreign)
 import Foreign as F
-import Prelude (Unit, discard, (<<<))
+import Prelude (Unit, bind, discard, pure, unit, (<<<))
 
 foreign import checkApplicationId_ ∷ EffectFn1 String Unit
 
@@ -24,11 +26,15 @@ checkApplicationId = EU.runEffectFn1 checkApplicationId_
 createMessageListener ∷ ∀ message. ApplicationId → (message → Effect Unit) → Effect Unit
 createMessageListener appId updater = do
       checkApplicationId appId
-      FAID.createCustomListener appId (updater <<< F.unsafeFromForeign)
+      FSIG.createCustomListener appId (updater <<< F.unsafeFromForeign)
 
 -- | Events from `Application.subscribe`
 createSubscription ∷ ∀ message. (message → Effect Unit) → Subscription message → Effect Unit
-createSubscription updater (Tuple source (Tuple eventName (Tuple toMessage _))) = case source of
-      Window → FAID.createWindowListener eventName (updater <<< toMessage)
-      Document → FAID.createDocumentListener eventName (updater <<< toMessage)
-      Custom → FAID.createCustomListener eventName (updater <<< toMessage)
+createSubscription updater (eventName /\ toMessage) = FSIG.createCustomListener eventName run
+      where
+      run ∷ Foreign → Effect Unit
+      run arg = do
+            message ← toMessage arg
+            case message of
+                  Just m → updater m
+                  Nothing → pure unit

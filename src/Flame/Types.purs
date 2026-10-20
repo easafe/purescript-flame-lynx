@@ -8,17 +8,16 @@ module Flame.Types
       , ApplicationId
       , Subscription
       , RenderingState
-      , Source(..)
       , EventName
-      , DomNode
       , NodeData
       , Html
       ) where
 
 import Data.Maybe (Maybe)
-import Data.Tuple.Nested (Tuple3)
+import Data.Tuple.Nested (type (/\))
+import Effect (Effect)
 import Foreign (Foreign)
-import Prelude (class Functor, class Show, map)
+import Prelude (class Functor, class Show, map, show)
 
 -- | `PreApplication` contains
 -- | * `model` – the initial model
@@ -33,26 +32,21 @@ type ApplicationId = String
 newtype AppId ∷ ∀ k. Type → k → Type
 newtype AppId a b = AppId a
 
+instance Show a ⇒ Show (AppId a b) where
+      show (AppId id) = show id
+
 type EventName = String
 
-data Source = Window | Document | Custom
-
--- | Subscriptions are events from outside the view, e.g. `window`, `document` or `CustomEvent`
-type Subscription message = Tuple3 Source EventName (Foreign → message)
+-- | Subscriptions to Lynx global events
+type Subscription message = EventName /\ (Foreign → Effect (Maybe message))
 
 type ToNodeData value = ∀ message. value → NodeData message
 
 type Tag = String
 type Key = String
 
--- | FFI class that keeps track of DOM rendering
+-- | FFI class that keeps track of Lynx rendering
 foreign import data RenderingState ∷ Type
-
--- | A make believe type for DOM nodes
-foreign import data DomNode ∷ Type
-
-instance Show DomNode where
-      show _ = "dom node"
 
 -- | Attributes and properties of virtual nodes
 foreign import data NodeData ∷ Type → Type

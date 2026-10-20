@@ -1,21 +1,29 @@
 module Flame.Renderer.Internal.Mobile
-      ( start
+      ( create
+      , navigate
+      , start
       , resume
       , getState
       ) where
 
 import Data.Maybe (Maybe)
+import Data.Nullable (Nullable, toNullable)
 import Effect (Effect)
-import Effect.Uncurried (EffectFn1, EffectFn2, EffectFn3)
+import Effect.Uncurried (EffectFn1, EffectFn2, EffectFn5)
 import Effect.Uncurried as EU
-import Flame.Types (DomNode, RenderingState, Html)
-import Prelude (Unit)
+import Flame.Types (RenderingState, Html)
+import Prelude (Unit, map)
 
-foreign import start_ ∷ ∀ model message. EffectFn3 (Maybe message → Effect Unit) (model -> Html message) model RenderingState
 
--- | Mounts the application
-start ∷ ∀ model message. (Maybe message → Effect Unit) → (model -> Html message) → model -> Effect RenderingState
-start = EU.runEffectFn3 start_
+foreign import create_ ∷ ∀ model message. EffectFn5 String (RenderingState → Maybe message → Effect Unit) (model → Html message) model (Effect (Nullable String)) RenderingState
+
+create ∷ ∀ model message. String → (RenderingState → Maybe message → Effect Unit) → (model → Html message) → model → Effect (Maybe String) → Effect RenderingState
+create appId updater view model check = EU.runEffectFn5 create_ appId updater view model (map toNullable check)
+
+foreign import start_ ∷ EffectFn1 (Array RenderingState) Unit
+
+start ∷ Array RenderingState → Effect Unit
+start = EU.runEffectFn1 start_
 
 foreign import resume_ ∷ ∀ model. EffectFn2 RenderingState model Unit
 
@@ -26,3 +34,8 @@ foreign import getState_ ∷ ∀ model. EffectFn1 RenderingState model
 
 getState :: ∀ model. RenderingState → Effect model
 getState = EU.runEffectFn1 getState_
+
+foreign import navigate_ ∷ EffectFn1 String Unit
+
+navigate ∷ String → Effect Unit
+navigate = EU.runEffectFn1 navigate_
