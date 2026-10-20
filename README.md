@@ -1,6 +1,6 @@
 ## Flame ![build status](https://github.com/easafe/purescript-flame/actions/workflows/CI.yml/badge.svg)
 
-Flame is a fast & simple framework inspired by the Elm architecture for building Lynx applications in PureScript
+This package provides (almost the) same API as the DOM based Flame library but for LynxJS. Import it for your mobile builds and voila, shared codebase
 
 ### Documentation
 
