@@ -46,8 +46,8 @@ noMessages model = model /\ []
 -- | Allows a "dynamic" application list
 newtype Route = Route (∀ result. (∀ model message. ApplicationId → Application model message → Effect (Maybe ApplicationId) → result) → result)
 
--- | Redirect when the guard returns a different app ID; otherwise show the route
-makeGuardedRoute ∷ ∀ model message id targetId targetMessage. Show id ⇒ Show targetId ⇒ AppId id message → Application model message → Effect (Maybe (AppId targetId targetMessage)) → Route
+-- | Show (or redirect to) a route
+makeGuardedRoute ∷ ∀ model message id guardedId guardedMessage. Show id ⇒ Show guardedId ⇒ AppId id message → Application model message → Effect (Maybe (AppId guardedId guardedMessage)) → Route
 makeGuardedRoute appId application check = Route \use → use (show appId) application (map (map show) check)
 
 makeRoute ∷ ∀ model message id. Show id ⇒ AppId id message → Application model message → Route
@@ -73,8 +73,8 @@ runAll applications = do
 run ∷ ∀ model message. ApplicationId → Application model message → Effect (Maybe ApplicationId) → Effect RenderingState
 run appId application check = do
       rendering ← FRIM.create appId runUpdate application.view application.model check
-      FSIL.createMessageListener appId (runUpdate rendering <<< Just)
-      DF.traverse_ (FSIL.createSubscription (runUpdate rendering <<< Just)) application.subscribe
+      FSIL.createMessageListener appId (FRIM.enqueue rendering <<< runUpdate rendering <<< Just)
+      DF.traverse_ (FSIL.createSubscription (FRIM.enqueue rendering) (runUpdate rendering <<< Just)) application.subscribe
       pure rendering
       where
       runUpdate rendering = case _ of

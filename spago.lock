@@ -76,6 +76,7 @@
         "test": {
           "dependencies": [
             "random",
+            "refs",
             "spec",
             "web-html"
           ]

@@ -34,8 +34,10 @@ function GuardedApplication({ application }) {
             let redirect = setTimeout(() => routerNavigate(routePath(destination), { replace: true }), 0);
 
             return () => clearTimeout(redirect);
-        } else
+        } else {
+            application.initialize();
             setAllowedKey(location.key);
+        }
 
     }, [application, location.key, location.pathname, routerNavigate]);
 
@@ -69,15 +71,51 @@ export function getState_(m) {
     return m.getState();
 }
 
+export function enqueue_(m, effect) {
+    m.enqueue(effect);
+}
+
 class M {
     constructor(appId, updater, view, initialState, guard) {
         this.path = routePath(appId);
-        this.state = initialState;
         this.guard = guard;
+        this.initialized = false;
+        this.pending = [];
+        this.flushing = false;
 
+        this.initialize = () => {
+            if (this.initialized)
+                return;
+
+            this.state = initialState;
+            this.initialized = true;
+            this.flush();
+        };
+        //a route isn't initialized until its guard passes
+        // so subscriptions need to be queued in case they were sent before that
+        this.enqueue = (effect) => {
+            this.pending.push(effect);
+            this.flush();
+        };
+        this.flush = () => {
+            if (!this.initialized || this.flushing)
+                return;
+
+            this.flushing = true;
+            let processed = 0;
+
+            try {
+                while (processed < this.pending.length)
+                    this.pending[processed++]();
+            } finally {
+                this.pending.splice(0, processed);
+                this.flushing = false;
+            }
+        };
         this.getState = () => this.state;
         this.resume = (state) => {
             this.state = state;
+
             if (this.setState !== undefined)
                 this.setState(() => state);
         };

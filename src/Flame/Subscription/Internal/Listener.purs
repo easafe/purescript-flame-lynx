@@ -29,8 +29,8 @@ createMessageListener appId updater = do
       FSIG.createCustomListener appId (updater <<< F.unsafeFromForeign)
 
 -- | Events from `Application.subscribe`
-createSubscription ∷ ∀ message. (message → Effect Unit) → Subscription message → Effect Unit
-createSubscription updater (eventName /\ toMessage) = FSIG.createCustomListener eventName run
+createSubscription ∷ ∀ message. (Effect Unit → Effect Unit) → (message → Effect Unit) → Subscription message → Effect Unit
+createSubscription schedule updater (eventName /\ toMessage) = FSIG.createCustomListener eventName (schedule <<< run)
       where
       run ∷ Foreign → Effect Unit
       run arg = do

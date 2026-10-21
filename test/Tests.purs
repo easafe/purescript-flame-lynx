@@ -213,6 +213,52 @@ spec = do
                   TSA.shouldEqual [ "one", "two", "three" ] restored
 
       TS.describe "routing" do
+            TS.it "queues global messages and subscription callbacks until a guard first passes" do
+                  lifecycle ← perform do
+                        unsafeCreateEnviroment
+                        lifecycle ← TRA.queued
+                        TRA.sendQueued "first"
+                        TRA.queuedPayload "payload"
+                        TRA.nativeQueued "last"
+                        pure lifecycle
+                  beforeVisit ← EC.liftEffect lifecycle.lifecycleEvents
+                  TSA.shouldEqual [] beforeVisit
+                  perform TRA.goQueued
+                  EAC.fromEffectFnAff settle_
+                  blocked ← EC.liftEffect $ exists "#queued"
+                  TSA.shouldEqual false blocked
+                  beforeAllowed ← EC.liftEffect lifecycle.lifecycleEvents
+                  TSA.shouldEqual [ "guard" ] beforeAllowed
+                  perform do
+                        lifecycle.setGuardAllowed true
+                        TRA.goQueued
+                  replayed ← textContent "#queued"
+                  TSA.shouldEqual "firstpayloadlastnested" replayed
+                  events ← EC.liftEffect lifecycle.lifecycleEvents
+                  TSA.shouldEqual
+                        [ "guard", "guard", "update first", "decode payload", "update payload", "update last", "update nested" ]
+                        events
+                  perform TRA.goWaiting
+                  perform $ TRA.sendQueued "inactive"
+                  whileInactive ← EC.liftEffect lifecycle.lifecycleEvents
+                  TSA.shouldEqual (events <> [ "update inactive" ]) whileInactive
+                  perform do
+                        lifecycle.setGuardAllowed false
+                        TRA.goQueued
+                  EAC.fromEffectFnAff settle_
+                  blockedAgain ← EC.liftEffect $ exists "#queued"
+                  TSA.shouldEqual false blockedAgain
+                  perform do
+                        lifecycle.setGuardAllowed true
+                        TRA.goQueued
+                  preserved ← textContent "#queued"
+                  TSA.shouldEqual "firstpayloadlastnestedinactive" preserved
+                  afterReentry ← EC.liftEffect lifecycle.lifecycleEvents
+                  TSA.shouldEqual (whileInactive <> [ "guard", "guard" ]) afterReentry
+                  perform $ TRA.queuedPayload "again"
+                  subscribedOnce ← textContent "#queued"
+                  TSA.shouldEqual "firstpayloadlastnestedinactiveagainnested" subscribedOnce
+
             TS.it "effects, mapped events, and messages between inactive routes" do
                   perform do
                         unsafeCreateEnviroment

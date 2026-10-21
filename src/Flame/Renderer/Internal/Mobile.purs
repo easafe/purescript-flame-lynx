@@ -4,6 +4,7 @@ module Flame.Renderer.Internal.Mobile
       , start
       , resume
       , getState
+      , enqueue
       ) where
 
 import Data.Maybe (Maybe)
@@ -13,7 +14,6 @@ import Effect.Uncurried (EffectFn1, EffectFn2, EffectFn5)
 import Effect.Uncurried as EU
 import Flame.Types (RenderingState, Html)
 import Prelude (Unit, map)
-
 
 foreign import create_ ∷ ∀ model message. EffectFn5 String (RenderingState → Maybe message → Effect Unit) (model → Html message) model (Effect (Nullable String)) RenderingState
 
@@ -34,6 +34,11 @@ foreign import getState_ ∷ ∀ model. EffectFn1 RenderingState model
 
 getState :: ∀ model. RenderingState → Effect model
 getState = EU.runEffectFn1 getState_
+
+foreign import enqueue_ ∷ EffectFn2 RenderingState (Effect Unit) Unit
+
+enqueue ∷ RenderingState → Effect Unit → Effect Unit
+enqueue = EU.runEffectFn2 enqueue_
 
 foreign import navigate_ ∷ EffectFn1 String Unit
 

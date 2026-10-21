@@ -27,6 +27,7 @@ package:
     main: Test.Main
     dependencies:
       - random
+      - refs
       - spec
       - web-html
   publish:
