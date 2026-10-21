@@ -34,11 +34,8 @@ function GuardedApplication({ application }) {
             let redirect = setTimeout(() => routerNavigate(routePath(destination), { replace: true }), 0);
 
             return () => clearTimeout(redirect);
-        } else {
-            application.initialize();
-            setAllowedKey(location.key);
-        }
-
+        } else
+            return application.initialize(() => setAllowedKey(location.key));
     }, [application, location.key, location.pathname, routerNavigate]);
 
     return allowedKey === location.key ? createElement(application.App) : null;
@@ -52,8 +49,8 @@ export function start_(applications) {
     root.render(createElement(MemoryRouter, { initialEntries: [applications[0].path] }, createElement(RouterContent, { applications })));
 }
 
-export function create_(appId, updater, view, initialState, guard) {
-    return new M(appId, updater, view, initialState, guard);
+export function create_(appId, initialize, guard) {
+    return new M(appId, (m, ready, failed) => initialize(m)(failed)(application => () => ready(application))(), guard);
 }
 
 export function resume_(m, state) {
@@ -71,46 +68,42 @@ export function getState_(m) {
     return m.getState();
 }
 
-export function enqueue_(m, effect) {
-    m.enqueue(effect);
-}
-
 class M {
-    constructor(appId, updater, view, initialState, guard) {
+    constructor(appId, load, guard) {
         this.path = routePath(appId);
         this.guard = guard;
-        this.initialized = false;
-        this.pending = [];
-        this.flushing = false;
+        this.initialization = 'idle';
+        this.ready = undefined;
 
-        this.initialize = () => {
-            if (this.initialized)
-                return;
+        this.initialize = (ready) => {
+            if (this.initialization === 'ready') {
+                ready();
 
-            this.state = initialState;
-            this.initialized = true;
-            this.flush();
-        };
-        //a route isn't initialized until its guard passes
-        // so subscriptions need to be queued in case they were sent before that
-        this.enqueue = (effect) => {
-            this.pending.push(effect);
-            this.flush();
-        };
-        this.flush = () => {
-            if (!this.initialized || this.flushing)
-                return;
-
-            this.flushing = true;
-            let processed = 0;
-
-            try {
-                while (processed < this.pending.length)
-                    this.pending[processed++]();
-            } finally {
-                this.pending.splice(0, processed);
-                this.flushing = false;
+                return () => {};
             }
+
+            this.ready = ready;
+
+            if (this.initialization === 'idle') {
+                this.initialization = 'loading';
+
+                load(this, application => {
+                    this.state = application.model;
+                    this.view = application.view;
+                    this.update = application.update;
+                    this.initialization = 'ready';
+                    this.ready?.();
+                    this.ready = undefined;
+                }, () => {
+                    this.initialization = 'idle';
+                    this.ready = undefined;
+                });
+            }
+
+            return () => {
+                if (this.ready === ready)
+                    this.ready = undefined;
+            };
         };
         this.getState = () => this.state;
         this.resume = (state) => {
@@ -144,10 +137,10 @@ class M {
                 return createElement(html[0], props, children);
             }
 
-            return toReact(view(state));
+            return toReact(this.view(state));
         };
 
-        let update = updater(this);
+        let update = message => this.update(message);
 
         function toProps(nodeData) {
             let props = {};

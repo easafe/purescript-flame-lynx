@@ -2,6 +2,7 @@ module Test.Routing.Applications where
 
 import Prelude
 
+import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
@@ -60,7 +61,7 @@ greeting =
       }
 
 applications ∷ Array Route
-applications = [ F.makeRoute counterId counter, F.makeRoute greetingId greeting ]
+applications = [ F.makeRoute counterId $ pure counter, F.makeRoute greetingId $ pure greeting ]
 
 main ∷ Effect Unit
 main = F.mountRoutes applications
@@ -70,12 +71,12 @@ single = F.mount (AppId 6) counter
 
 guarded ∷ Effect Unit
 guarded = F.mountRoutes
-      [ F.makeGuardedRoute (AppId 3) counter <<< pure <<< Just $ AppId 4
-      , F.makeRoute (AppId 4) greeting
+      [ F.makeGuardedRoute (AppId 3) (pure counter) <<< pure <<< Just $ AppId 4
+      , F.makeRoute (AppId 4) $ pure greeting
       ]
 
 selfGuarded ∷ Effect Unit
-selfGuarded = F.mountRoutes [ F.makeGuardedRoute (AppId 5) counter <<< pure <<< Just $ AppId 5 ]
+selfGuarded = F.mountRoutes [ F.makeGuardedRoute (AppId 5) (pure counter) <<< pure <<< Just $ AppId 5 ]
 
 goCounter ∷ Effect Unit
 goCounter = F.navigate counterId
@@ -95,51 +96,48 @@ payload accept = FSUC.broadcast (EventType "payload") { accept }
 goGuarded ∷ Effect Unit
 goGuarded = F.navigate $ AppId 3
 
-queuedId ∷ AppId Int GreetingMessage
-queuedId = AppId 7
-
-waitingId ∷ AppId Int GreetingMessage
-waitingId = AppId 8
-
-queued ∷ Effect { lifecycleEvents ∷ Effect (Array String), setGuardAllowed ∷ Boolean → Effect Unit }
-queued = do
+-- A manually completed Aff makes navigation during construction deterministic.
+asynchronous ∷ Int → Effect
+      { finish ∷ Effect Unit
+      , fail ∷ Effect Unit
+      , events ∷ Effect (Array String)
+      , setAllowed ∷ Boolean → Effect Unit
+      , go ∷ Effect Unit
+      , leave ∷ Effect Unit
+      , send ∷ String → Effect Unit
+      , publish ∷ Effect Unit
+      }
+asynchronous id = do
       events ← ER.new []
-      guardAllowed ← ER.new false
-      let recordLifecycle event = ER.modify_ (_ <> [ event ]) events
+      completion ← ER.new (\_ → pure unit)
+      allowed ← ER.new false
+      let
+            appId = AppId id ∷ AppId Int GreetingMessage
+            waiting = AppId (id + 1) ∷ AppId Int GreetingMessage
+            eventType = EventType $ "async-" <> show id
+            record event = ER.modify_ (_ <> [ event ]) events
+            factory = do
+                  application ← EA.makeAff \resolve → do
+                        record "start"
+                        ER.write resolve completion
+                        pure EA.nonCanceler
+                  EC.liftEffect $ record "finish"
+                  pure application
+            complete result = ER.read completion >>= (_ $ result)
       F.mountRoutes
-            [ F.makeRoute waitingId greeting
-            , F.makeGuardedRoute queuedId
-                  { model: ""
-                  , view: \model → FHE.div [ FHA.id "queued" ] [ FHE.text model ]
-                  , update: \model (Append suffix) → (model <> suffix) /\
-                        [ EC.liftEffect (recordLifecycle $ "update " <> suffix) $> Nothing ]
-                  , subscribe:
-                        [ FS.onCustomEvent' (EventType "queued-payload") $ \(eventPayload ∷ { value ∷ String }) → do
-                                recordLifecycle $ "decode " <> eventPayload.value
-                                FS.send queuedId $ Append "nested"
-                                pure <<< Just $ Append eventPayload.value
-                        ]
-                  }
-                  do
-                        recordLifecycle "guard"
-                        allowed ← ER.read guardAllowed
-                        pure if allowed then Nothing else Just waitingId
+            [ F.makeGuardedRoute appId factory do
+                  record "guard"
+                  canEnter ← ER.read allowed
+                  pure if canEnter then Nothing else Just waiting
+            , F.makeRoute waiting $ pure greeting
             ]
-      pure { lifecycleEvents: ER.read events, setGuardAllowed: flip ER.write guardAllowed }
-
-goQueued ∷ Effect Unit
-goQueued = F.navigate queuedId
-
-goWaiting ∷ Effect Unit
-goWaiting = F.navigate waitingId
-
-sendQueued ∷ String → Effect Unit
-sendQueued = FS.send queuedId <<< Append
-
-nativeQueued ∷ String → Effect Unit
-nativeQueued = nativeQueued_ <<< Append
-
-queuedPayload ∷ String → Effect Unit
-queuedPayload value = FSUC.broadcast (EventType "queued-payload") { value }
-
-foreign import nativeQueued_ ∷ GreetingMessage → Effect Unit
+      pure
+            { finish: complete $ Right greeting { model = "loaded", subscribe = [ FS.onCustomEvent eventType $ Append "?" ] }
+            , fail: complete $ Left $ EE.error "expected factory failure"
+            , events: ER.read events
+            , setAllowed: flip ER.write allowed
+            , go: F.navigate appId
+            , leave: F.navigate waiting
+            , send: FS.send appId <<< Append
+            , publish: FSUC.broadcast' eventType
+            }

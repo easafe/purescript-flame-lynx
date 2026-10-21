@@ -18,7 +18,7 @@ import Effect.Aff as EA
 import Effect.Aff.Compat (EffectFnAff)
 import Effect.Aff.Compat as EAC
 import Effect.Class as EC
-import Flame (Html)
+import Flame (AppId(..), Html)
 import Flame.Html.Attribute as FHA
 import Flame.Html.Element as FHE
 import Flame.Renderer.Internal.Mobile as FRIM
@@ -115,6 +115,12 @@ spec = do
                   TSA.shouldEqual "2" current2
 
       TS.describe "Subscription applications" do
+            TS.it "rejects unregistered application IDs" do
+                  result ← EC.liftEffect <<< EE.try $ FS.send (AppId 404) TEELIncrement
+                  case result of
+                        Left error → TSA.shouldEqual "Cannot send message. Route with id 404 has not yet been initialized" $ EE.message error
+                        Right _ → TSA.fail "Sending to an unregistered application must fail"
+
             TS.it "application" do
                   id ← perform do
                         unsafeCreateEnviroment
@@ -213,51 +219,87 @@ spec = do
                   TSA.shouldEqual [ "one", "two", "three" ] restored
 
       TS.describe "routing" do
-            TS.it "queues global messages and subscription callbacks until a guard first passes" do
+            TS.it "constructs only after a guard passes and shares initialization across entries" do
                   lifecycle ← perform do
                         unsafeCreateEnviroment
-                        lifecycle ← TRA.queued
-                        TRA.sendQueued "first"
-                        TRA.queuedPayload "payload"
-                        TRA.nativeQueued "last"
-                        pure lifecycle
-                  beforeVisit ← EC.liftEffect lifecycle.lifecycleEvents
-                  TSA.shouldEqual [] beforeVisit
-                  perform TRA.goQueued
+                        TRA.asynchronous 9
                   EAC.fromEffectFnAff settle_
-                  blocked ← EC.liftEffect $ exists "#queued"
-                  TSA.shouldEqual false blocked
-                  beforeAllowed ← EC.liftEffect lifecycle.lifecycleEvents
-                  TSA.shouldEqual [ "guard" ] beforeAllowed
+                  denied ← EC.liftEffect lifecycle.events
+                  TSA.shouldEqual [ "guard" ] denied
+                  redirected ← textContent "#greeting"
+                  TSA.shouldEqual "hello" redirected
                   perform do
-                        lifecycle.setGuardAllowed true
-                        TRA.goQueued
-                  replayed ← textContent "#queued"
-                  TSA.shouldEqual "firstpayloadlastnested" replayed
-                  events ← EC.liftEffect lifecycle.lifecycleEvents
-                  TSA.shouldEqual
-                        [ "guard", "guard", "update first", "decode payload", "update payload", "update last", "update nested" ]
-                        events
-                  perform TRA.goWaiting
-                  perform $ TRA.sendQueued "inactive"
-                  whileInactive ← EC.liftEffect lifecycle.lifecycleEvents
-                  TSA.shouldEqual (events <> [ "update inactive" ]) whileInactive
-                  perform do
-                        lifecycle.setGuardAllowed false
-                        TRA.goQueued
+                        lifecycle.setAllowed true
+                        lifecycle.go
+                  pending ← EC.liftEffect lifecycle.events
+                  TSA.shouldEqual [ "guard", "guard", "start" ] pending
+                  beforeReady ← EC.liftEffect $ exists "#greeting"
+                  TSA.shouldEqual false beforeReady
+                  perform lifecycle.go
+                  perform lifecycle.finish
+                  loaded ← textContent "#greeting"
+                  TSA.shouldEqual "loaded" loaded
+                  perform $ lifecycle.send "after"
+                  perform lifecycle.leave
+                  perform lifecycle.go
+                  perform lifecycle.publish
+                  subscribedOnce ← textContent "#greeting"
+                  TSA.shouldEqual "loadedafter?" subscribedOnce
+                  revisited ← EC.liftEffect lifecycle.events
+                  TSA.shouldEqual [ "guard", "guard", "start", "guard", "finish", "guard" ] revisited
+
+            TS.it "finishes inactive factories without displaying a stale or denied route" do
+                  lifecycle ← perform do
+                        unsafeCreateEnviroment
+                        TRA.asynchronous 11
                   EAC.fromEffectFnAff settle_
-                  blockedAgain ← EC.liftEffect $ exists "#queued"
-                  TSA.shouldEqual false blockedAgain
                   perform do
-                        lifecycle.setGuardAllowed true
-                        TRA.goQueued
-                  preserved ← textContent "#queued"
-                  TSA.shouldEqual "firstpayloadlastnestedinactive" preserved
-                  afterReentry ← EC.liftEffect lifecycle.lifecycleEvents
-                  TSA.shouldEqual (whileInactive <> [ "guard", "guard" ]) afterReentry
-                  perform $ TRA.queuedPayload "again"
-                  subscribedOnce ← textContent "#queued"
-                  TSA.shouldEqual "firstpayloadlastnestedinactiveagainnested" subscribedOnce
+                        lifecycle.setAllowed true
+                        lifecycle.go
+                  perform lifecycle.leave
+                  perform do
+                        lifecycle.setAllowed false
+                        lifecycle.go
+                  EAC.fromEffectFnAff settle_
+                  perform lifecycle.finish
+                  waiting ← textContent "#greeting"
+                  TSA.shouldEqual "hello" waiting
+                  perform $ lifecycle.send "inactive"
+                  perform lifecycle.go
+                  EAC.fromEffectFnAff settle_
+                  stillDenied ← textContent "#greeting"
+                  TSA.shouldEqual "hello" stillDenied
+                  perform do
+                        lifecycle.setAllowed true
+                        lifecycle.go
+                  loaded ← textContent "#greeting"
+                  TSA.shouldEqual "loadedinactive" loaded
+                  events ← EC.liftEffect lifecycle.events
+                  TSA.shouldEqual [ "guard", "guard", "start", "guard", "finish", "guard", "guard" ] events
+
+            TS.it "retries failed construction on a later allowed entry" do
+                  lifecycle ← perform do
+                        unsafeCreateEnviroment
+                        TRA.asynchronous 13
+                  EAC.fromEffectFnAff settle_
+                  perform do
+                        lifecycle.setAllowed true
+                        lifecycle.go
+                  perform lifecycle.fail
+                  failedView ← EC.liftEffect $ exists "#greeting"
+                  TSA.shouldEqual false failedView
+                  perform lifecycle.leave
+                  waiting ← textContent "#greeting"
+                  TSA.shouldEqual "hello" waiting
+                  perform lifecycle.go
+                  perform lifecycle.finish
+                  recovered ← textContent "#greeting"
+                  TSA.shouldEqual "loaded" recovered
+                  perform $ lifecycle.send "after"
+                  delivered ← textContent "#greeting"
+                  TSA.shouldEqual "loadedafter" delivered
+                  events ← EC.liftEffect lifecycle.events
+                  TSA.shouldEqual [ "guard", "guard", "start", "guard", "start", "finish" ] events
 
             TS.it "effects, mapped events, and messages between inactive routes" do
                   perform do
@@ -272,23 +314,23 @@ spec = do
                   dispatch "#mapped" "input" "mapped"
                   updated ← textContent "#counter > text"
                   TSA.shouldEqual "4" updated
-                  tap "#tell"
                   perform TRA.goGreeting
                   greeting ← textContent "#greeting"
-                  TSA.shouldEqual "hello!" greeting
+                  TSA.shouldEqual "hello" greeting
                   perform do
                         TRA.sendIncrement
                         TRA.refresh
                         TRA.payload false
                         TRA.payload true
                   broadcast ← textContent "#greeting"
-                  TSA.shouldEqual "hello!?" broadcast
+                  TSA.shouldEqual "hello?" broadcast
                   perform TRA.goCounter
                   counter ← textContent "#counter > text"
                   TSA.shouldEqual "7" counter
+                  tap "#tell"
                   perform TRA.goGreeting
                   preserved ← textContent "#greeting"
-                  TSA.shouldEqual "hello!?" preserved
+                  TSA.shouldEqual "hello?!" preserved
 
             TS.it "redirecting guards block the protected view on every entry" do
                   perform do
@@ -370,7 +412,7 @@ tap selector = dispatch selector "tap" ""
 mountHtml ∷ Html Unit → Aff RenderingState
 mountHtml html = do
       perform unsafeCreateEnviroment
-      state ← EC.liftEffect <<< FRIM.create "view-test" (const <<< const $ pure unit) identity html $ pure Nothing
+      state ← EC.liftEffect <<< FRIM.create "view-test" (const $ pure { model: html, view: identity, update: const $ pure unit, subscribe: pure unit }) $ pure Nothing
       perform $ FRIM.start [ state ]
       pure state
 

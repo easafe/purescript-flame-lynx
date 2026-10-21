@@ -43,19 +43,18 @@ type Application model message =
 noMessages ∷ ∀ model message. model → Tuple model (Array (Aff (Maybe message)))
 noMessages model = model /\ []
 
--- | Allows a "dynamic" application list
-newtype Route = Route (∀ result. (∀ model message. ApplicationId → Application model message → Effect (Maybe ApplicationId) → result) → result)
+newtype Route = Route (Effect RenderingState)
 
 -- | Show (or redirect to) a route
-makeGuardedRoute ∷ ∀ model message id guardedId guardedMessage. Show id ⇒ Show guardedId ⇒ AppId id message → Application model message → Effect (Maybe (AppId guardedId guardedMessage)) → Route
-makeGuardedRoute appId application check = Route \use → use (show appId) application (map (map show) check)
+makeGuardedRoute ∷ ∀ model message id guardedId guardedMessage. Show id ⇒ Show guardedId ⇒ AppId id message → Aff (Application model message) → Effect (Maybe (AppId guardedId guardedMessage)) → Route
+makeGuardedRoute appId application check = Route $ run (show appId) application (map (map show) check)
 
-makeRoute ∷ ∀ model message id. Show id ⇒ AppId id message → Application model message → Route
-makeRoute appId application = makeGuardedRoute appId application (pure (Nothing ∷ Maybe (AppId id message)))
+makeRoute ∷ ∀ model message id. Show id ⇒ AppId id message → Aff (Application model message) → Route
+makeRoute appId application = Route $ run (show appId) application (pure Nothing)
 
 -- | Mount a Flame application that can be fed arbitrary external messages
 mount ∷ ∀ id model message. Show id ⇒ AppId id message → Application model message → Effect Unit
-mount appId application = runAll [ makeRoute appId application ]
+mount appId application = runAll [ makeRoute appId $ pure application ]
 
 -- | Mount a Flame application with routing
 mountRoutes ∷ Array Route → Effect Unit
@@ -67,24 +66,33 @@ navigate = FRIM.navigate <<< show
 
 runAll ∷ Array Route → Effect Unit
 runAll applications = do
-      renderings ← DT.traverse (\(Route use) → use run) applications
+      renderings ← DT.traverse (\(Route create) → create) applications
       FRIM.start renderings
 
-run ∷ ∀ model message. ApplicationId → Application model message → Effect (Maybe ApplicationId) → Effect RenderingState
-run appId application check = do
-      rendering ← FRIM.create appId runUpdate application.view application.model check
-      FSIL.createMessageListener appId (FRIM.enqueue rendering <<< runUpdate rendering <<< Just)
-      DF.traverse_ (FSIL.createSubscription (FRIM.enqueue rendering) (runUpdate rendering <<< Just)) application.subscribe
-      pure rendering
-      where
-      runUpdate rendering = case _ of
-            Nothing → pure unit
-            Just message → do
-                  state ← FRIM.getState rendering
-                  let updatedState /\ affs = application.update state message
-                  FRIM.resume rendering updatedState
-                  DF.for_ affs $ EA.runAff_
-                        ( case _ of
-                                Left error → EC.log $ EE.message error
-                                Right msg → runUpdate rendering msg
-                        )
+run ∷ ∀ model message. ApplicationId → Aff (Application model message) → Effect (Maybe ApplicationId) → Effect RenderingState
+run appId factory check = do
+      FSIL.checkApplicationId appId
+      FRIM.create appId (\rendering → do
+            application ← factory
+            let update = runUpdate application rendering
+            pure
+                  { model: application.model
+                  , view: application.view
+                  , update
+                  , subscribe: do
+                          FSIL.createMessageListener appId (update <<< Just)
+                          DF.traverse_ (FSIL.createSubscription update) application.subscribe
+                  }) check
+
+runUpdate ∷ ∀ model message. Application model message → RenderingState → Maybe message → Effect Unit
+runUpdate application rendering = case _ of
+      Nothing → pure unit
+      Just message → do
+            state ← FRIM.getState rendering
+            let updatedState /\ affs = application.update state message
+            FRIM.resume rendering updatedState
+            DF.for_ affs $ EA.runAff_
+                  ( case _ of
+                          Left error → EC.log $ EE.message error
+                          Right msg → runUpdate application rendering msg
+                  )
