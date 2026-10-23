@@ -12,12 +12,12 @@ import Web.Event.Event (EventType(..))
 
 -- | Broadcast a `CustomEvent` to all applications
 -- |
--- | This is considered unsafe as there is no guarantee that the payload matches listeners' expectations
+-- | This is considered unsafe as there is no guarantee that the payload matches listeners' expectations or that the listener has been registered yet in case of guarded routes
 broadcast ∷ ∀ arg. SerializeState arg ⇒ EventType → arg → Effect Unit
 broadcast (EventType eventName) = FSIG.dispatchCustomEvent eventName <<< FS.serialize
 
 -- | Broadcast a `CustomEvent` that has no data associated to all applications
 -- |
--- | This is considered unsafe as there is no guarantee that the payload matches listeners' expectations
+-- | This is considered unsafe as there is no guarantee that the payload matches listeners' expectations or that the listener has been registered yet in case of guarded routes
 broadcast' ∷ EventType → Effect Unit
 broadcast' (EventType eventName) = FSIG.dispatchCustomEvent eventName unit

@@ -10,7 +10,9 @@ import Data.Identity (Identity(..))
 import Data.Foldable as DF
 import Data.String.CodeUnits as DSC
 import Data.Traversable as DT
+import Data.Array as DA
 import Effect (Effect)
+import Effect.Ref as ER
 import Effect.Exception (Error)
 import Effect.Exception as EE
 import Effect.Aff (Aff)
@@ -19,8 +21,11 @@ import Effect.Aff.Compat (EffectFnAff)
 import Effect.Aff.Compat as EAC
 import Effect.Class as EC
 import Flame (AppId(..), Html)
+import Flame as F
 import Flame.Html.Attribute as FHA
 import Flame.Html.Element as FHE
+import Flame.Html.Event (Event)
+import Foreign as FO
 import Flame.Renderer.Internal.Mobile as FRIM
 import Flame.Subscription as FS
 import Flame.Subscription.Unsafe.CustomEvent as FSUC
@@ -51,7 +56,7 @@ type AsyncTest = Effect Unit → (Error → Effect Unit) → Effect Unit
 
 tests ∷ Effect Unit
 tests = case TS.collect spec of
-      Identity tests → register tests
+      Identity tt → register tt
       where
       execute action success failure = void <<< EA.runAff_ (DE.either failure $ const success) $ action
       register = DF.traverse_ case _ of
@@ -114,12 +119,61 @@ spec = do
                   current2 ← textContent "#text-output-1"
                   TSA.shouldEqual "2" current2
 
+      TS.describe "events" do
+            TS.it "runs all handlers for an event in registration order across renders" do
+                  messages ← EC.liftEffect $ ER.new []
+                  events ← EC.liftEffect $ ER.new []
+                  let
+                        handler prefix event = do
+                              ER.modify_ (_ <> [ event ]) events
+                              let payload = FO.unsafeFromForeign event ∷ { detail ∷ { value ∷ String } }
+                              pure <<< Just $ prefix <> ":" <> payload.detail.value
+                        view updated = FHE.input
+                              [ FHA.id "events-input"
+                              , FHA.placeholder "old"
+                              , FHA.placeholder "new"
+                              , FHA.createRawEvent "bindinput" $ handler if updated then "updated" else "first"
+                              , FHA.createEvent "bindconfirm" "confirm"
+                              , FHA.createEvent "bindinput" "second"
+                              , FHA.createRawEvent "bindinput" $ handler "third"
+                              ]
+                  perform unsafeCreateEnviroment
+                  rendering ← EC.liftEffect $ FRIM.create "events" (\renderer → pure
+                        { model: false
+                        , view
+                        , update: case _ of
+                                Nothing → pure unit
+                                Just message → do
+                                      ER.modify_ (_ <> [ message ]) messages
+                                      FRIM.resume renderer true
+                        , subscribe: pure unit
+                        }) $ pure Nothing
+                  perform $ FRIM.start [ rendering ]
+                  placeholder ← EC.liftEffect $ getAttribute "#events-input" "placeholder"
+                  TSA.shouldEqual "new" placeholder
+                  dispatch "#events-input" "input" "hello"
+                  first ← EC.liftEffect $ ER.read messages
+                  TSA.shouldEqual [ "first:hello", "second", "third:hello" ] first
+                  received ← EC.liftEffect $ ER.read events
+                  case received of
+                        [ firstEvent, thirdEvent ] → TSA.shouldEqual true $ sameEvent_ firstEvent thirdEvent
+                        _ → TSA.fail "Both raw handlers must receive the event"
+                  dispatch "#events-input" "input" "again"
+                  updated ← EC.liftEffect $ ER.read messages
+                  TSA.shouldEqual [ "updated:again", "second", "third:again" ] $ DA.drop 3 updated
+                  dispatch "#events-input" "confirm" ""
+                  confirmed ← EC.liftEffect $ ER.read messages
+                  TSA.shouldEqual [ "confirm" ] $ DA.drop 6 confirmed
+
       TS.describe "Subscription applications" do
-            TS.it "rejects unregistered application IDs" do
-                  result ← EC.liftEffect <<< EE.try $ FS.send (AppId 404) TEELIncrement
-                  case result of
-                        Left error → TSA.shouldEqual "Cannot send message. Route with id 404 has not yet been initialized" $ EE.message error
-                        Right _ → TSA.fail "Sending to an unregistered application must fail"
+            TS.it "queues messages sent before route registration" do
+                  perform do
+                        unsafeCreateEnviroment
+                        FS.send (AppId 404) $ TRA.Append "first"
+                        FS.send (AppId 404) $ TRA.Append "second"
+                        F.mount (AppId 404) TRA.greeting
+                  output ← textContent "#greeting"
+                  TSA.shouldEqual "hellofirstsecond" output
 
             TS.it "application" do
                   id ← perform do
@@ -182,8 +236,8 @@ spec = do
             TS.it "SVG content" do
                   void $ mountHtml $ FHE.svg [ FHA.id "graphic", FHA.viewBox "0 0 10 10" ]
                         [ FHE.path [ FHA.d "M0 0L10 10", FHA.stroke "red" ] [] ]
-                  content ← EC.liftEffect $ getAttribute "svg" "content"
-                  TSA.shouldEqual "<svg id=\"graphic\" viewBox=\"0 0 10 10\" ><path d=\"M0 0L10 10\" stroke=\"red\"  /></svg>" content
+                  content ← EC.liftEffect $ getAttribute "#graphic" "content"
+                  TSA.shouldEqual "<svg viewBox=\"0 0 10 10\" ><path d=\"M0 0L10 10\" stroke=\"red\"  /></svg>" content
 
       TS.describe "Lynx node update" do
             TS.it "update text nodes" do
@@ -223,6 +277,7 @@ spec = do
                   lifecycle ← perform do
                         unsafeCreateEnviroment
                         TRA.asynchronous 9
+                  perform $ lifecycle.send "denied"
                   EAC.fromEffectFnAff settle_
                   denied ← EC.liftEffect lifecycle.events
                   TSA.shouldEqual [ "guard" ] denied
@@ -235,16 +290,17 @@ spec = do
                   TSA.shouldEqual [ "guard", "guard", "start" ] pending
                   beforeReady ← EC.liftEffect $ exists "#greeting"
                   TSA.shouldEqual false beforeReady
+                  perform $ lifecycle.send "loading"
                   perform lifecycle.go
                   perform lifecycle.finish
                   loaded ← textContent "#greeting"
-                  TSA.shouldEqual "loaded" loaded
+                  TSA.shouldEqual "loadeddeniedloading" loaded
                   perform $ lifecycle.send "after"
                   perform lifecycle.leave
                   perform lifecycle.go
                   perform lifecycle.publish
                   subscribedOnce ← textContent "#greeting"
-                  TSA.shouldEqual "loadedafter?" subscribedOnce
+                  TSA.shouldEqual "loadeddeniedloadingafter?" subscribedOnce
                   revisited ← EC.liftEffect lifecycle.events
                   TSA.shouldEqual [ "guard", "guard", "start", "guard", "finish", "guard" ] revisited
 
@@ -285,6 +341,7 @@ spec = do
                   perform do
                         lifecycle.setAllowed true
                         lifecycle.go
+                  perform $ lifecycle.send "queued"
                   perform lifecycle.fail
                   failedView ← EC.liftEffect $ exists "#greeting"
                   TSA.shouldEqual false failedView
@@ -294,10 +351,10 @@ spec = do
                   perform lifecycle.go
                   perform lifecycle.finish
                   recovered ← textContent "#greeting"
-                  TSA.shouldEqual "loaded" recovered
+                  TSA.shouldEqual "loadedqueued" recovered
                   perform $ lifecycle.send "after"
                   delivered ← textContent "#greeting"
-                  TSA.shouldEqual "loadedafter" delivered
+                  TSA.shouldEqual "loadedqueuedafter" delivered
                   events ← EC.liftEffect lifecycle.events
                   TSA.shouldEqual [ "guard", "guard", "start", "guard", "start", "finish" ] events
 
@@ -373,7 +430,6 @@ spec = do
                         Left _ → pure unit
                         Right _ → TSA.fail "Navigation must fail after the router unmounts"
 
-
 perform ∷ ∀ a. Effect a → Aff a
 perform = EAC.fromEffectFnAff <<< perform_
 
@@ -419,17 +475,15 @@ mountHtml html = do
 resumeHtml ∷ RenderingState → Html Unit → Aff Unit
 resumeHtml state html = perform $ FRIM.resume state html
 
-
 foreign import registerTest_ ∷ String → AsyncTest → Effect Unit
 foreign import describe_ ∷ String → Effect Unit → Effect Unit
 foreign import pending_ ∷ String → Effect Unit
 foreign import afterAll_ ∷ AsyncTest → Effect Unit
-
 foreign import settle_ ∷ EffectFnAff Unit
-
 foreign import unsafeCreateEnviroment ∷ Effect Unit
 foreign import perform_ ∷ ∀ a. Effect a → EffectFnAff a
 foreign import getStyle_ ∷ Element → String → Effect String
 foreign import dispatch_ ∷ String → String → String → Effect Unit
 foreign import attributeValue_ ∷ ∀ message. NodeData message → String
 foreign import attributeName_ ∷ ∀ message. NodeData message → String
+foreign import sameEvent_ ∷ Event → Event → Boolean

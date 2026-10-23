@@ -120,3 +120,9 @@ export function settle_(onError, onSuccess) {
         success();
     };
 }
+
+export function sameEvent_(first) {
+    return function (second) {
+        return first === second;
+    };
+}

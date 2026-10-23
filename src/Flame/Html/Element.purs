@@ -29,6 +29,9 @@ module Flame.Html.Element
   , div
   , div'
   , div_
+  , scrollView
+  , scrollView'
+  , scrollView_
   , ellipse
   , ellipse'
   , fragment
@@ -301,6 +304,15 @@ button_ = createElement_ "view"
 
 button' ∷ ∀ message. Array (NodeData message) → Html message
 button' = createElement' "view"
+
+scrollView ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
+scrollView = createElement "scroll-view"
+
+scrollView_ ∷ ∀ message. Array (Html message) → Html message
+scrollView_ = createElement_ "scroll-view"
+
+scrollView' ∷ ∀ message. Array (NodeData message) → Html message
+scrollView' = createElement' "scroll-view"
 
 div ∷ ∀ message. Array (NodeData message) → Array (Html message) → Html message
 div = createElement "view"

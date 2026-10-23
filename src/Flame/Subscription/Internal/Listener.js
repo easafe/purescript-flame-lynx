@@ -2,16 +2,31 @@
 let applicationIds = new Map();
 
 export function checkApplicationId_(id) {
-    if (applicationIds.has(id))
+    if (applicationIds.get(id)?.registered)
         throw `Error mounting application: id ${id} already registered!`;
 
-    applicationIds.set(id, false);
+    let application = applicationIds.get(id) ?? { messages: [] };
+
+    application.registered = true;
+    applicationIds.set(id, application);
 }
 
 export function registerApplicationId_(id) {
-    applicationIds.set(id, true);
+    let application = applicationIds.get(id),
+        messages = application.messages;
+
+    application.messages = null;
+
+    return messages;
 }
 
-export function isApplicationRegistered_(id) {
-    return applicationIds.get(id) === true;
+export function isApplicationInitialized_(id) {
+    return applicationIds.get(id)?.messages === null;
+}
+
+export function queueMessage_(id, message) {
+    let application = applicationIds.get(id) ?? { registered: false, messages: [] };
+
+    application.messages.push(message);
+    applicationIds.set(id, application);
 }

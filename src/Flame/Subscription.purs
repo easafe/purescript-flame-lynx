@@ -9,25 +9,24 @@ module Flame.Subscription
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Effect.Exception as EE
 import Flame.Subscription.Internal.GlobalEvent as FSIG
 import Flame.Subscription.Internal.Listener as FSIL
 import Flame.Serialization (class UnserializeState)
 import Flame.Serialization as FS
 import Flame.Types (AppId, Subscription)
 import Foreign as F
-import Prelude (class Show, Unit, bind, const, pure, show, ($), (<<<), (<>))
+import Prelude (class Show, Unit, bind, const, pure, show, (<<<))
 import Web.Event.Event (EventType(..))
 
 -- | Raises an arbitrary message on the given application
 send ∷ ∀ id message. Show id ⇒ AppId id message → message → Effect Unit
 send appId message = do
       let id = show appId
-      registered ← FSIL.isApplicationRegistered id
+      registered ← FSIL.isApplicationInitialized id
       if registered then
             FSIG.dispatchCustomEvent id message
       else
-            EE.throw $ "Cannot send message. Route with id " <> id <> " has not yet been initialized"
+            FSIL.queueMessage id message
 
 -- | Subscribe to a `CustomEvent` that has no data associated
 onCustomEvent ∷ ∀ message. EventType → message → Subscription message

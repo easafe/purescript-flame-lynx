@@ -82,7 +82,7 @@ export function createSvgNode(nodeData) {
             nd = [];
 
         for (let [name, value, isEvent] of nodeData)
-            if (!isEvent && name !== "className" && name !== "style")
+            if (!isEvent && name !== "id" && name !== "className" && name !== "style")
                 props += `${name}="${value}" `;
             else
                 nd.push([name, value, isEvent]);

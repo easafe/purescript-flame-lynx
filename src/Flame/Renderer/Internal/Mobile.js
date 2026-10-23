@@ -143,14 +143,27 @@ class M {
         let update = message => this.update(message);
 
         function toProps(nodeData) {
-            let props = {};
+            let props = Object.create(null),
+                events = Object.create(null);
 
             for (let [name, value, isEvent] of nodeData) {
                 if (isEvent) {
-                    props[name] = typeof value === "function" ? (e) => update(value(e)())() : () => update(value)();
+                    if (events[name] === undefined)
+                        events[name] = [];
+
+                    events[name].push(value);
                 }
                 else
                     props[name] = value;
+            }
+
+            for (let name of Object.keys(events)) {
+                let handlers = events[name];
+
+                props[name] = event => {
+                    for (let handler of handlers)
+                        update(typeof handler === "function" ? handler(event)() : handler)();
+                };
             }
 
             return props;

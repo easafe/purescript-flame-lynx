@@ -1,5 +1,5 @@
 -- | Attributes for Lynx elements and the supported SVG markup subset
-module Flame.Html.Attribute.Internal (class ToClassList, class ToStyleList, ToBooleanAttribute, ToIntAttribute, ToNumberAttribute, ToStringAttribute, class', createAttribute, createProp, style, style1, to, toStyleList, key, autoSize, autoplay, id, content, placeholder, src, type', value, height, maxlength, width, clipPathAttr, clipPathUnits, clipRule, color, cx, cy, d, fill, fillOpacity, fillRule, fontSize, fx, fy, gradientTransform, gradientUnits, href, opacity, preserveAspectRatio, r, rx, ry, stopColor, stopOpacity, stroke, strokeDasharray, strokeDashoffset, strokeLinecap, strokeLinejoin, strokeMiterlimit, strokeOpacity, strokeWidth, transform, viewBox, x, y, x1, y1, x2, y2, points, mode, styleAttr, disabled, readOnly, title, target, rel, action, method, accept, autocomplete, alt, charset, for, lang, name, checked, selected, rows) where
+module Flame.Html.Attribute.Internal (class ToClassList, class ToStyleList, ToBooleanAttribute, ToIntAttribute, ToNumberAttribute, ToStringAttribute, class', createAttribute, createProp, style, style1, to, toStyleList, key, autoSize, autoplay, id, content, placeholder, src, type', value, height, maxlength, width, clipPathAttr, clipPathUnits, clipRule, color, cx, cy, d, fill, fillOpacity, fillRule, fontSize, fx, fy, gradientTransform, gradientUnits, href, opacity, preserveAspectRatio, r, rx, ry, stopColor, stopOpacity, stroke, strokeDasharray, strokeDashoffset, strokeLinecap, strokeLinejoin, strokeMiterlimit, strokeOpacity, strokeWidth, transform, viewBox, x, y, x1, y1, x2, y2, points, mode, styleAttr, disabled, readOnly, title, target, rel, action, method, accept, autocomplete, alt, charset, for, lang, name, checked, selected, rows, scrollOrientation) where
 
 import Data.Array as DA
 import Data.Either as DE
@@ -308,3 +308,6 @@ selected = createBooleanProp "selected"
 
 rows ∷ ToIntAttribute
 rows = createIntProp "rows"
+
+scrollOrientation ∷ ToStringAttribute
+scrollOrientation = createProp "scroll-orientation"
