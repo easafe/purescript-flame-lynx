@@ -125,7 +125,7 @@ class M {
                 let props = html[1] === undefined ? undefined : toProps(html[1]),
                     children;
 
-                if (html[0] === 'text')
+                if (html[0] === 'text' && typeof html[2] === 'string')
                     children = html[2];
                 else if (html[2] !== undefined) {
                     children = new Array(html[2].length);
