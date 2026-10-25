@@ -1,5 +1,5 @@
 -- | Attributes for Lynx elements and the supported SVG markup subset
-module Flame.Html.Attribute.Internal (class ToClassList, class ToStyleList, ToBooleanAttribute, ToIntAttribute, ToNumberAttribute, ToStringAttribute, class', createAttribute, createProp, style, style1, to, toStyleList, key, autoSize, autoplay, id, content, placeholder, src, type', value, height, maxlength, width, clipPathAttr, clipPathUnits, clipRule, color, cx, cy, d, fill, fillOpacity, fillRule, fontSize, fx, fy, gradientTransform, gradientUnits, href, opacity, preserveAspectRatio, r, rx, ry, stopColor, stopOpacity, stroke, strokeDasharray, strokeDashoffset, strokeLinecap, strokeLinejoin, strokeMiterlimit, strokeOpacity, strokeWidth, transform, viewBox, x, y, x1, y1, x2, y2, points, mode, styleAttr, disabled, readOnly, title, target, rel, action, method, accept, autocomplete, alt, charset, for, lang, name, checked, selected, rows, scrollOrientation) where
+module Flame.Html.Attribute.Internal (class ToClassList, class ToStyleList, ToBooleanAttribute, ToIntAttribute, ToNumberAttribute, ToStringAttribute, class', createAttribute, createProperty, style, style1, to, toStyleList, key, autoSize, autoplay, id, content, placeholder, src, type', value, height, maxlength, width, clipPathAttr, clipPathUnits, clipRule, color, cx, cy, d, fill, fillOpacity, fillRule, fontSize, fx, fy, gradientTransform, gradientUnits, href, opacity, preserveAspectRatio, r, rx, ry, stopColor, stopOpacity, stroke, strokeDasharray, strokeDashoffset, strokeLinecap, strokeLinejoin, strokeMiterlimit, strokeOpacity, strokeWidth, transform, viewBox, x, y, x1, y1, x2, y2, points, mode, styleAttr, disabled, readOnly, title, target, rel, action, method, accept, autocomplete, alt, charset, for, lang, name, checked, selected, rows, scrollOrientation) where
 
 import Data.Array as DA
 import Data.Either as DE
@@ -55,7 +55,7 @@ else instance Homogeneous r String ⇒ ToStyleList { | r } where
 else instance DF.Foldable f ⇒ ToStyleList (f (Tuple String String)) where
       toStyleList = FO.fromFoldable
 
-foreign import createProp ∷ ∀ message. String → String → NodeData message
+foreign import createProperty ∷ ∀ message. String → String → NodeData message
 
 foreign import createClass ∷ ∀ message. Array String → NodeData message
 
@@ -65,7 +65,7 @@ class' ∷ ∀ a b. ToClassList b ⇒ b → NodeData a
 class' = createClass <<< map caseify <<< to
 
 createAttribute ∷ ∀ message. String → String → NodeData message
-createAttribute = createProp
+createAttribute = createProperty
 
 -- | Sets the node style
 -- |
@@ -97,163 +97,163 @@ foreign import createBooleanProp ∷ ∀ message. String → Boolean → NodeDat
 foreign import createIntProp ∷ ∀ message. String → Int → NodeData message
 
 key ∷ ToStringAttribute
-key = createProp "key"
+key = createProperty "key"
 
 autoSize ∷ ToBooleanAttribute
 autoSize = createBooleanProp "auto-size"
 
 id ∷ ToStringAttribute
-id = createProp "id"
+id = createProperty "id"
 
 content ∷ ToStringAttribute
-content = createProp "content"
+content = createProperty "content"
 
 placeholder ∷ ToStringAttribute
-placeholder = createProp "placeholder"
+placeholder = createProperty "placeholder"
 
 src ∷ ToStringAttribute
-src = createProp "src"
+src = createProperty "src"
 
 type' ∷ ToStringAttribute
-type' = createProp "type"
+type' = createProperty "type"
 
 value ∷ ToStringAttribute
-value = createProp "value"
+value = createProperty "value"
 
 height ∷ ToStringAttribute
-height = createProp "height"
+height = createProperty "height"
 
 maxlength ∷ ToIntAttribute
 maxlength = createIntProp "maxlength"
 
 width ∷ ToStringAttribute
-width = createProp "width"
+width = createProperty "width"
 
 clipPathAttr ∷ ToStringAttribute
-clipPathAttr = createProp "clip-path"
+clipPathAttr = createProperty "clip-path"
 
 clipPathUnits ∷ ToStringAttribute
-clipPathUnits = createProp "clipPathUnits"
+clipPathUnits = createProperty "clipPathUnits"
 
 clipRule ∷ ToStringAttribute
-clipRule = createProp "clip-rule"
+clipRule = createProperty "clip-rule"
 
 color ∷ ToStringAttribute
-color = createProp "color"
+color = createProperty "color"
 
 cx ∷ ToStringAttribute
-cx = createProp "cx"
+cx = createProperty "cx"
 
 cy ∷ ToStringAttribute
-cy = createProp "cy"
+cy = createProperty "cy"
 
 d ∷ ToStringAttribute
-d = createProp "d"
+d = createProperty "d"
 
 fill ∷ ToStringAttribute
-fill = createProp "fill"
+fill = createProperty "fill"
 
 fillOpacity ∷ ToStringAttribute
-fillOpacity = createProp "fill-opacity"
+fillOpacity = createProperty "fill-opacity"
 
 fillRule ∷ ToStringAttribute
-fillRule = createProp "fill-rule"
+fillRule = createProperty "fill-rule"
 
 fontSize ∷ ToStringAttribute
-fontSize = createProp "font-size"
+fontSize = createProperty "font-size"
 
 fx ∷ ToStringAttribute
-fx = createProp "fx"
+fx = createProperty "fx"
 
 fy ∷ ToStringAttribute
-fy = createProp "fy"
+fy = createProperty "fy"
 
 gradientTransform ∷ ToStringAttribute
-gradientTransform = createProp "gradientTransform"
+gradientTransform = createProperty "gradientTransform"
 
 gradientUnits ∷ ToStringAttribute
-gradientUnits = createProp "gradientUnits"
+gradientUnits = createProperty "gradientUnits"
 
 href ∷ ToStringAttribute
-href = createProp "href"
+href = createProperty "href"
 
 opacity ∷ ToStringAttribute
-opacity = createProp "opacity"
+opacity = createProperty "opacity"
 
 preserveAspectRatio ∷ ToStringAttribute
-preserveAspectRatio = createProp "preserveAspectRatio"
+preserveAspectRatio = createProperty "preserveAspectRatio"
 
 r ∷ ToStringAttribute
-r = createProp "r"
+r = createProperty "r"
 
 rx ∷ ToStringAttribute
-rx = createProp "rx"
+rx = createProperty "rx"
 
 ry ∷ ToStringAttribute
-ry = createProp "ry"
+ry = createProperty "ry"
 
 stopColor ∷ ToStringAttribute
-stopColor = createProp "stop-color"
+stopColor = createProperty "stop-color"
 
 stopOpacity ∷ ToStringAttribute
-stopOpacity = createProp "stop-opacity"
+stopOpacity = createProperty "stop-opacity"
 
 stroke ∷ ToStringAttribute
-stroke = createProp "stroke"
+stroke = createProperty "stroke"
 
 strokeDasharray ∷ ToStringAttribute
-strokeDasharray = createProp "stroke-dasharray"
+strokeDasharray = createProperty "stroke-dasharray"
 
 strokeDashoffset ∷ ToStringAttribute
-strokeDashoffset = createProp "stroke-dashoffset"
+strokeDashoffset = createProperty "stroke-dashoffset"
 
 strokeLinecap ∷ ToStringAttribute
-strokeLinecap = createProp "stroke-linecap"
+strokeLinecap = createProperty "stroke-linecap"
 
 strokeLinejoin ∷ ToStringAttribute
-strokeLinejoin = createProp "stroke-linejoin"
+strokeLinejoin = createProperty "stroke-linejoin"
 
 strokeMiterlimit ∷ ToNumberAttribute
-strokeMiterlimit = createProp "stroke-miterlimit" <<< show
+strokeMiterlimit = createProperty "stroke-miterlimit" <<< show
 
 strokeOpacity ∷ ToStringAttribute
-strokeOpacity = createProp "stroke-opacity"
+strokeOpacity = createProperty "stroke-opacity"
 
 strokeWidth ∷ ToStringAttribute
-strokeWidth = createProp "stroke-width"
+strokeWidth = createProperty "stroke-width"
 
 transform ∷ ToStringAttribute
-transform = createProp "transform"
+transform = createProperty "transform"
 
 viewBox ∷ ToStringAttribute
-viewBox = createProp "viewBox"
+viewBox = createProperty "viewBox"
 
 x ∷ ToStringAttribute
-x = createProp "x"
+x = createProperty "x"
 
 y ∷ ToStringAttribute
-y = createProp "y"
+y = createProperty "y"
 
 x1 ∷ ToStringAttribute
-x1 = createProp "x1"
+x1 = createProperty "x1"
 
 y1 ∷ ToStringAttribute
-y1 = createProp "y1"
+y1 = createProperty "y1"
 
 x2 ∷ ToStringAttribute
-x2 = createProp "x2"
+x2 = createProperty "x2"
 
 y2 ∷ ToStringAttribute
-y2 = createProp "y2"
+y2 = createProperty "y2"
 
 points ∷ ToStringAttribute
-points = createProp "points"
+points = createProperty "points"
 
 mode ∷ ToStringAttribute
-mode = createProp "mode"
+mode = createProperty "mode"
 
 styleAttr ∷ ToStringAttribute
-styleAttr = createProp "style"
+styleAttr = createProperty "style"
 
 disabled ∷ ToBooleanAttribute
 disabled = createBooleanProp "disabled"
@@ -265,40 +265,40 @@ autoplay ∷ ToBooleanAttribute
 autoplay = createBooleanProp "autoplay"
 
 title ∷ ToStringAttribute
-title = createProp "title"
+title = createProperty "title"
 
 target ∷ ToStringAttribute
-target = createProp "target"
+target = createProperty "target"
 
 rel ∷ ToStringAttribute
-rel = createProp "rel"
+rel = createProperty "rel"
 
 action ∷ ToStringAttribute
-action = createProp "action"
+action = createProperty "action"
 
 method ∷ ToStringAttribute
-method = createProp "method"
+method = createProperty "method"
 
 accept ∷ ToStringAttribute
-accept = createProp "accept"
+accept = createProperty "accept"
 
 autocomplete ∷ ToStringAttribute
-autocomplete = createProp "autocomplete"
+autocomplete = createProperty "autocomplete"
 
 alt ∷ ToStringAttribute
-alt = createProp "alt"
+alt = createProperty "alt"
 
 charset ∷ ToStringAttribute
-charset = createProp "charset"
+charset = createProperty "charset"
 
 for ∷ ToStringAttribute
-for = createProp "for"
+for = createProperty "for"
 
 lang ∷ ToStringAttribute
-lang = createProp "lang"
+lang = createProperty "lang"
 
 name ∷ ToStringAttribute
-name = createProp "name"
+name = createProperty "name"
 
 checked ∷ ToBooleanAttribute
 checked = createBooleanProp "checked"
@@ -310,4 +310,4 @@ rows ∷ ToIntAttribute
 rows = createIntProp "rows"
 
 scrollOrientation ∷ ToStringAttribute
-scrollOrientation = createProp "scroll-orientation"
+scrollOrientation = createProperty "scroll-orientation"

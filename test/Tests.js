@@ -126,3 +126,8 @@ export function sameEvent_(first) {
         return first === second;
     };
 }
+
+export function eventValue_(event) {
+
+    return event.detail.value;
+}

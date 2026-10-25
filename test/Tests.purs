@@ -24,8 +24,6 @@ import Flame (AppId(..), Html)
 import Flame as F
 import Flame.Html.Attribute as FHA
 import Flame.Html.Element as FHE
-import Flame.Html.Event (Event)
-import Foreign as FO
 import Flame.Renderer.Internal.Mobile as FRIM
 import Flame.Subscription as FS
 import Flame.Subscription.Unsafe.CustomEvent as FSUC
@@ -39,7 +37,7 @@ import Test.Routing.Applications as TRA
 import Test.Spec (Spec)
 import Test.Spec as TS
 import Test.Spec.Assertions as TSA
-import Web.Event.Event (EventType(..))
+import Web.Event.Event (Event, EventType(..))
 import Web.DOM.AttrName (AttrName(..))
 import Web.DOM.Element (Element)
 import Web.DOM.Element as WDE
@@ -53,6 +51,8 @@ import Web.HTML.HTMLDocument as WHH
 import Web.HTML.Window as WHW
 
 type AsyncTest = Effect Unit → (Error → Effect Unit) → Effect Unit
+
+foreign import eventValue_ ∷ Event → String
 
 tests ∷ Effect Unit
 tests = case TS.collect spec of
@@ -126,8 +126,7 @@ spec = do
                   let
                         handler prefix event = do
                               ER.modify_ (_ <> [ event ]) events
-                              let payload = FO.unsafeFromForeign event ∷ { detail ∷ { value ∷ String } }
-                              pure <<< Just $ prefix <> ":" <> payload.detail.value
+                              pure <<< Just $ prefix <> ":" <> eventValue_ event
                         view updated = FHE.input
                               [ FHA.id "events-input"
                               , FHA.placeholder "old"

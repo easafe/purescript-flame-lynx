@@ -1,5 +1,6 @@
-export function createProp(name) {
+export function createProperty(name) {
     return function (value) {
+
         return [name, value];
     };
 }
@@ -12,4 +13,4 @@ export function createStyle(object) {
     return ['style', object];
 }
 
-export { createProp as createBooleanProp, createProp as createIntProp };
+export { createProperty as createBooleanProp, createProperty as createIntProp };

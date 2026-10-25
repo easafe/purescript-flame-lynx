@@ -1,5 +1,5 @@
 -- | Events supported by Lynx elements
-module Flame.Html.Event (Event, EventName, ToEvent, ToRawEvent, ToMaybeEvent, ToSpecialEvent, createEvent, createEventMessage, createRawEvent, onBlur, onBlur', onClick, onClick', onChange, onChange', onError, onError', onFocus, onFocus', onInput, onInput', onLoad, onLoad', onScroll, onScroll', onConfirm, onConfirm') where
+module Flame.Html.Event (EventName, ToEvent, ToRawEvent, ToMaybeEvent, ToSpecialEvent, createEvent, createEventMessage, createRawEvent, onBlur, onBlur', onClick, onClick', onChange, onChange', onError, onError', onFocus, onFocus', onInput, onInput', onLoad, onLoad', onScroll, onScroll', onConfirm, onConfirm') where
 
 import Prelude
 
@@ -8,10 +8,7 @@ import Effect (Effect)
 import Effect.Uncurried (EffectFn1)
 import Effect.Uncurried as EU
 import Flame.Types (NodeData)
-import Foreign (Foreign)
-
--- | A Lynx event payload, not a browser DOM Event
-type Event = Foreign
+import Web.Event.Event (Event)
 
 type EventName = String
 
