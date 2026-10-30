@@ -288,7 +288,9 @@ spec = do
                   pending ← EC.liftEffect lifecycle.events
                   TSA.shouldEqual [ "guard", "guard", "start" ] pending
                   beforeReady ← EC.liftEffect $ exists "#greeting"
-                  TSA.shouldEqual false beforeReady
+                  TSA.shouldEqual true beforeReady
+                  previous ← textContent "#greeting"
+                  TSA.shouldEqual "hello" previous
                   perform $ lifecycle.send "loading"
                   perform lifecycle.go
                   perform lifecycle.finish
@@ -301,7 +303,7 @@ spec = do
                   subscribedOnce ← textContent "#greeting"
                   TSA.shouldEqual "loadeddeniedloadingafter?" subscribedOnce
                   revisited ← EC.liftEffect lifecycle.events
-                  TSA.shouldEqual [ "guard", "guard", "start", "guard", "finish", "guard" ] revisited
+                  TSA.shouldEqual [ "start", "finish" ] $ DA.filter (_ /= "guard") revisited
 
             TS.it "finishes inactive factories without displaying a stale or denied route" do
                   lifecycle ← perform do
@@ -330,7 +332,7 @@ spec = do
                   loaded ← textContent "#greeting"
                   TSA.shouldEqual "loadedinactive" loaded
                   events ← EC.liftEffect lifecycle.events
-                  TSA.shouldEqual [ "guard", "guard", "start", "guard", "finish", "guard", "guard" ] events
+                  TSA.shouldEqual [ "start", "finish" ] $ DA.filter (_ /= "guard") events
 
             TS.it "retries failed construction on a later allowed entry" do
                   lifecycle ← perform do
@@ -343,7 +345,7 @@ spec = do
                   perform $ lifecycle.send "queued"
                   perform lifecycle.fail
                   failedView ← EC.liftEffect $ exists "#greeting"
-                  TSA.shouldEqual false failedView
+                  TSA.shouldEqual true failedView
                   perform lifecycle.leave
                   waiting ← textContent "#greeting"
                   TSA.shouldEqual "hello" waiting
@@ -355,7 +357,54 @@ spec = do
                   delivered ← textContent "#greeting"
                   TSA.shouldEqual "loadedqueuedafter" delivered
                   events ← EC.liftEffect lifecycle.events
-                  TSA.shouldEqual [ "guard", "guard", "start", "guard", "start", "finish" ] events
+                  TSA.shouldEqual [ "start", "start", "finish" ] $ DA.filter (_ /= "guard") events
+
+            TS.it "same-route navigation preserves the mounted native elements" do
+                  perform do
+                        unsafeCreateEnviroment
+                        F.mount (AppId 19) TRA.counter
+                  before ← EC.liftEffect $ queryElement "#counter"
+                  perform <<< F.navigate $ AppId 19
+                  after ← EC.liftEffect $ queryElement "#counter"
+                  retained ← EC.liftEffect $ WDN.contains (WDE.toNode before) (WDE.toNode after)
+                  TSA.shouldEqual true retained
+                  tap "#increment"
+                  count ← textContent "#counter > text"
+                  TSA.shouldEqual "1" count
+
+            TS.it "rechecks authorization before displaying a completed factory" do
+                  lifecycle ← perform do
+                        unsafeCreateEnviroment
+                        TRA.asynchronous 15
+                  perform do
+                        lifecycle.setAllowed true
+                        lifecycle.go
+                  perform do
+                        lifecycle.setAllowed false
+                        lifecycle.finish
+                  denied ← textContent "#greeting"
+                  TSA.shouldEqual "hello" denied
+                  perform do
+                        lifecycle.setAllowed true
+                        lifecycle.go
+                  loaded ← textContent "#greeting"
+                  TSA.shouldEqual "loaded" loaded
+
+            TS.it "cancels a pending transition when returning to the visible route" do
+                  lifecycle ← perform do
+                        unsafeCreateEnviroment
+                        TRA.asynchronous 17
+                  perform do
+                        lifecycle.setAllowed true
+                        lifecycle.go
+                  before ← EC.liftEffect $ queryElement "#greeting"
+                  perform lifecycle.leave
+                  perform lifecycle.finish
+                  after ← EC.liftEffect $ queryElement "#greeting"
+                  retained ← EC.liftEffect $ WDN.contains (WDE.toNode before) (WDE.toNode after)
+                  TSA.shouldEqual true retained
+                  text ← textContent "#greeting"
+                  TSA.shouldEqual "hello" text
 
             TS.it "effects, mapped events, and messages between inactive routes" do
                   perform do

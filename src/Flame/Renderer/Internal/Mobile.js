@@ -1,52 +1,98 @@
-import { root, createElement, useEffect, useState } from '@lynx-js/react';
-import { MemoryRouter, Routes, Route, useNavigate, useLocation } from 'react-router';
+import * as LR from '@lynx-js/react';
 
 let navigate;
 
-function RouterContent({ applications }) {
-    let routerNavigate = useNavigate();
+function Router({ applications }) {
+    let [active, setActive] = LR.useState(null),
+        reference = LR.useRef({ active: null, pending: null }),
+        controller = reference.current;
 
-    useEffect(() => {
-        navigate = routerNavigate;
+    controller.setActive = setActive;
+    LR.useEffect(() => {
+        let go = path => showApplication(controller, applications, path);
 
-        return () => { navigate = undefined; };
-    }, [routerNavigate]);
+        navigate = go;
+        go(applications[0].path);
 
-    return createElement(Routes, null,
-        applications.map(application => createElement(Route, {
-            key: application.path,
-            path: application.path,
-            element: createElement(GuardedApplication, { application }),
-        })));
+        return () => {
+            cancelPending(controller);
+            if (navigate === go)
+                navigate = undefined;
+        };
+    }, [applications]);
+
+    return active === null ? null : LR.createElement(active.App);
 }
 
-function GuardedApplication({ application }) {
-    let location = useLocation(),
-        routerNavigate = useNavigate(),
-        [allowedKey, setAllowedKey] = useState(null);
+function showApplication(controller, applications, path) {
+    let application = resolveApplication(applications, path);
 
-    useEffect(() => {
+    if (controller.pending?.application === application)
+        return;
+
+    cancelPending(controller);
+
+    if (controller.active === application)
+        return;
+
+    let request = { application };
+
+    controller.pending = request;
+
+    if (controller.active && application.initialization !== 'ready') {
+        let destination = controller.active.guard();
+
+        if (destination !== null && destination !== controller.active.path) {
+            controller.active = null;
+            controller.setActive(null);
+        }
+    }
+
+    request.cancel = application.initialize(() => {
+        if (controller.pending !== request)
+            return;
+
+        let allowed = resolveApplication(applications, application.path);
+
+        controller.pending = null;
+        if (allowed !== application) {
+            showApplication(controller, applications, allowed.path);
+            return;
+        }
+
+        controller.active = application;
+        controller.setActive(application);
+    }, () => {
+        if (controller.pending === request)
+            controller.pending = null;
+    });
+}
+
+function resolveApplication(applications, path) {
+    let visited = new Set();
+
+    while (!visited.has(path)) {
+        let application = applications.find(a => a.path === path);
+        if (!application)
+            throw new Error('Unknown Flame route: ' + path);
+
         let destination = application.guard();
+        if (destination === null || destination === path)
+            return application;
 
-        if (destination !== null && routePath(destination) !== location.pathname) {
-            setAllowedKey(null);
-            // wait for subscription before setting navigation
-            let redirect = setTimeout(() => routerNavigate(routePath(destination), { replace: true }), 0);
-
-            return () => clearTimeout(redirect);
-        } else
-            return application.initialize(() => setAllowedKey(location.key));
-    }, [application, location.key, location.pathname, routerNavigate]);
-
-    return allowedKey === location.key ? createElement(application.App) : null;
+        visited.add(path);
+        path = destination;
+    }
+    throw new Error('Circular Flame route guard: ' + path);
 }
 
-function routePath(path) {
-    return path.startsWith('/') ? path : '/' + path;
+function cancelPending(controller) {
+    controller.pending?.cancel?.();
+    controller.pending = null;
 }
 
 export function start_(applications) {
-    root.render(createElement(MemoryRouter, { initialEntries: [applications[0].path] }, createElement(RouterContent, { applications })));
+    LR.root.render(LR.createElement(Router, { applications }));
 }
 
 export function create_(appId, initialize, guard) {
@@ -61,28 +107,31 @@ export function navigate_(path) {
     if (!navigate)
         throw new Error('Flame router is not mounted');
 
-    navigate(routePath(path));
+    navigate(path);
 }
 
 export function getState_(m) {
-    return m.getState();
+    return m.state;
 }
 
 class M {
     constructor(appId, load, guard) {
-        this.path = routePath(appId);
+        this.path = appId;
         this.guard = guard;
         this.initialization = 'idle';
-        this.ready = undefined;
+        this.listener = undefined;
+        this.state = undefined;
+        this.setState = undefined;
 
-        this.initialize = (ready) => {
+        this.initialize = (ready, failed) => {
             if (this.initialization === 'ready') {
                 ready();
-
                 return () => {};
             }
 
-            this.ready = ready;
+            let listener = { ready, failed };
+
+            this.listener = listener;
 
             if (this.initialization === 'idle') {
                 this.initialization = 'loading';
@@ -92,20 +141,20 @@ class M {
                     this.view = application.view;
                     this.update = application.update;
                     this.initialization = 'ready';
-                    this.ready?.();
-                    this.ready = undefined;
+                    this.listener?.ready();
+                    this.listener = undefined;
                 }, () => {
                     this.initialization = 'idle';
-                    this.ready = undefined;
+                    this.listener?.failed();
+                    this.listener = undefined;
                 });
             }
 
             return () => {
-                if (this.ready === ready)
-                    this.ready = undefined;
+                if (this.listener === listener)
+                    this.listener = undefined;
             };
         };
-        this.getState = () => this.state;
         this.resume = (state) => {
             this.state = state;
 
@@ -113,34 +162,28 @@ class M {
                 this.setState(() => state);
         };
         this.App = () => {
-            let [state, setState] = useState(() => this.state);
+            let [state, setState] = LR.useState(() => this.state);
 
             this.setState = setState;
 
-            useEffect(() => () => {
-                this.setState = undefined;
+            LR.useEffect(() => () => {
+                if (this.setState === setState)
+                    this.setState = undefined;
             }, []);
-
-            function toReact(html) {
-                let props = html[1] === undefined ? undefined : toProps(html[1]),
-                    children;
-
-                if (html[0] === 'text' && typeof html[2] === 'string')
-                    children = html[2];
-                else if (html[2] !== undefined) {
-                    children = new Array(html[2].length);
-
-                    for (let i = 0; i < html[2].length; ++i)
-                        children[i] = toReact(html[2][i]);
-                }
-
-                return createElement(html[0], props, children);
-            }
 
             return toReact(this.view(state));
         };
 
         let update = message => this.update(message);
+
+        function toReact(html) {
+            let props = html[1] === undefined ? undefined : toProps(html[1]),
+                children = html[0] === 'text' && typeof html[2] === 'string'
+                    ? html[2]
+                    : html[2]?.map(toReact);
+
+            return LR.createElement(html[0], props, children);
+        }
 
         function toProps(nodeData) {
             let props = Object.create(null),
